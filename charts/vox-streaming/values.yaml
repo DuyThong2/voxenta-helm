@@ -1,7 +1,7 @@
 replicaCount: 1
 
 image:
-  repository: <AWS_ACCOUNT_ID>.dkr.ecr.ap-southeast-1.amazonaws.com/vox-streaming
+  repository: 975049890010.dkr.ecr.ap-southeast-1.amazonaws.com/vox-streaming
   tag: latest
   pullPolicy: IfNotPresent
 
@@ -42,8 +42,16 @@ config:
   GRPC_ADDR: ":9091"
   STORAGE_REGION: ap-southeast-1
   STORAGE_USE_SSL: "true"
-  STORAGE_FRAME_BUCKET: vox-streaming-frames
-  STORAGE_RECORDING_BUCKET: vox-streaming-recordings
+  # Own dedicated bucket for vox-streaming (1 bucket for both frames+recordings,
+  # simplified from the 2 separate buckets originally planned -- frames/
+  # recordings lose their own 7d/365d lifecycle split, both inherit whatever
+  # lifecycle rule this one bucket has). NOT the same bucket as vox's
+  # exam-uploads (charts/vox/values.yaml's AWS_S3_BUCKET) -- kept separate on
+  # purpose. Credentials ARE shared though (STORAGE_ACCESS_KEY/SECRET_KEY in
+  # externalsecret.yaml read from vox/app, same AWS account/IAM user as vox
+  # itself) -- that IAM user's policy must grant access to this bucket too.
+  STORAGE_FRAME_BUCKET: vox-exam-log
+  STORAGE_RECORDING_BUCKET: vox-exam-log
   # These 2 don't have a Go-level fallback when unset -- Atoi("") silently
   # yields 0, which would mean 0 concurrent frame conversion workers and
   # presigned URLs that expire immediately. Real dev values from vox-streaming/.env.

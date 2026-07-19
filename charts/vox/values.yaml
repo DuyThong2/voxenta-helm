@@ -1,7 +1,7 @@
 replicaCount: 2
 
 image:
-  repository: <AWS_ACCOUNT_ID>.dkr.ecr.ap-southeast-1.amazonaws.com/vox-app
+  repository: 975049890010.dkr.ecr.ap-southeast-1.amazonaws.com/vox-app
   tag: latest
   pullPolicy: IfNotPresent
 
@@ -43,7 +43,7 @@ config:
   DB_USER: vox
   # Google OAuth client ID is not sensitive (it's a public identifier embedded
   # in redirect URLs) — only GOOGLE_CLIENT_SECRET (externalsecret.yaml) is secret.
-  GOOGLE_CLIENT_ID: "<FILL_IN:google_oauth_client_id>"
+  GOOGLE_CLIENT_ID: "378994619054-r330gi2bjasmna0lhgohiof8hg9gio6i.apps.googleusercontent.com"
   # Frontend routes the app links to after email flows — real domain, not a
   # secret. Update if the frontend's actual route paths differ.
   PASSWORD_SETUP_URL: https://voxenta.net/setup-password
@@ -56,11 +56,11 @@ config:
   STORAGE_PROVIDER: s3
   AWS_REGION: ap-southeast-1
   AWS_S3_PATH_STYLE: "false"
-  # 🔧 Bucket not created by infrastructureBE or infrastructureFE Terraform —
-  # open decision: reuse an existing bucket or provision a new one, then fill in.
-  AWS_S3_BUCKET: "<FILL_IN:s3_exam_uploads_bucket_name>"
+  # Same bucket already used in dev (vox/.env) -- reused as-is, not created by
+  # infrastructureBE/infrastructureFE Terraform.
+  AWS_S3_BUCKET: vox-exam-uploads
   AWS_S3_KEY_PREFIX: prod
-  AWS_S3_PUBLIC_BASE_URL: "<FILL_IN:s3_exam_uploads_bucket_public_url>"
+  AWS_S3_PUBLIC_BASE_URL: https://vox-exam-uploads.s3.ap-southeast-1.amazonaws.com
 
 externalSecret:
   refreshInterval: 1h
