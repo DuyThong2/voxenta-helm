@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vox-streaming
+  labels:
+    app.kubernetes.io/name: vox-streaming
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+{{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+{{- end }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: vox-streaming
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: vox-streaming
+    spec:
+      containers:
+        - name: vox-streaming
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: metrics
+              containerPort: 9090
+            - name: grpc
+              containerPort: 9091
+          envFrom:
+            - configMapRef:
+                name: vox-streaming-config
+            - secretRef:
+                name: vox-streaming-env
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+

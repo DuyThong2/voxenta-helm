@@ -1,0 +1,9 @@
+dependencies:
+- name: postgresql
+  repository: https://charts.bitnami.com/bitnami
+  version: 18.8.0
+- name: chromadb
+  repository: https://amikos-tech.github.io/chromadb-chart/
+  version: 0.2.2
+digest: sha256:25ff937ef042ac74c7e1af10e38f9f5fa386f71811862dfc2dab5aaf0ca86374
+generated: "2026-07-19T09:59:48.6647989+07:00"

@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agents
+  labels:
+    app.kubernetes.io/name: agents
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+{{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+{{- end }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: agents
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: agents
+    spec:
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 8 }}
+      tolerations:
+{{ toYaml .Values.tolerations | indent 8 }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+      containers:
+        - name: agents
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: agents-config
+            - secretRef:
+                name: agents-env
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+

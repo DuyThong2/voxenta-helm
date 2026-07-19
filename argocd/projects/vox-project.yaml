@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: vox
+  namespace: argocd
+spec:
+  description: Vox platform GitOps project
+  sourceRepos:
+    - https://github.com/DuyThong2/voxenta-helm.git
+    - git@github.com:DuyThong2/voxenta-helm.git
+  destinations:
+    - namespace: vox
+      server: https://kubernetes.default.svc
+    - namespace: vox-streaming
+      server: https://kubernetes.default.svc
+    - namespace: vox-agents
+      server: https://kubernetes.default.svc
+    - namespace: coturn
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"
+

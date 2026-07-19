@@ -1,0 +1,64 @@
+replicaCount: 1
+
+image:
+  repository: <AWS_ACCOUNT_ID>.dkr.ecr.ap-southeast-1.amazonaws.com/vox-streaming
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  httpPort: 8080
+  metricsPort: 9090
+  grpcPort: 9091
+
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 75
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+ingress:
+  enabled: true
+  # Currently no caller is wired to this service; deploy the ingress so the route is ready.
+  host: stream.voxenta.net
+  certificateArn: ""
+  albGroupName: vox-backend
+  idleTimeoutSeconds: 300
+
+config:
+  KAFKA_BROKERS: vox-kafka.vox.svc.cluster.local:9092
+  KAFKA_CONSUMER_GROUP: vox-streaming
+  REDIS_ADDR: vox-redis-master.vox.svc.cluster.local:6379
+  WEBRTC_ADDR: ":8080"
+  METRIC_ADDR: ":9090"
+  GRPC_ADDR: ":9091"
+  STORAGE_REGION: ap-southeast-1
+  STORAGE_USE_SSL: "true"
+  STORAGE_FRAME_BUCKET: vox-streaming-frames
+  STORAGE_RECORDING_BUCKET: vox-streaming-recordings
+  # These 2 don't have a Go-level fallback when unset -- Atoi("") silently
+  # yields 0, which would mean 0 concurrent frame conversion workers and
+  # presigned URLs that expire immediately. Real dev values from vox-streaming/.env.
+  STORAGE_PRESIGN_MINUTES: "15"
+  FRAME_CONVERT_CONCURRENCY: "2"
+  FRAME_INTERVAL_SECS: "5"
+  # Real frontend origin, not localhost:5173 (dev value in vox-streaming/.env).
+  ALLOWED_ORIGINS: https://voxenta.net
+  # EXAM_SERVICE_GRPC_ADDR / EXAM_SERVICE_CA_FILE / GRPC_CERT_FILE / GRPC_KEY_FILE /
+  # GRPC_CA_FILE / SEGMENT_TEMP_DIR / SLACK_WEBHOOK_URL: deliberately left unset,
+  # matching vox-streaming/.env exactly -- vox's own gRPC ExamService isn't built
+  # yet (readyz reports this dependency "skipped" rather than failing), and this
+  # project doesn't use mTLS between services anywhere else either.
+
+externalSecret:
+  refreshInterval: 1h
+  secretStoreRef: aws-secrets-manager
+

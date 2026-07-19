@@ -1,0 +1,69 @@
+# Values for the vendored dependency chart `coturn` (pschichtel/helm-charts,
+# see Chart.yaml). Nested under `coturn:` because that's the dependency's name
+# in Chart.yaml — this is standard Helm subchart value-scoping, NOT a naming
+# collision with the fields further down in this file.
+coturn:
+  service:
+    type: LoadBalancer
+    externalTrafficPolicy: Local
+    # Keep everything (control port + relay range) on ONE Service/NLB —
+    # matches "coturn" section of task/deploy-structure/execution-plan.md.
+    separateRelayService: false
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-type: nlb
+      service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
+      service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+
+  coturn:
+    realm: turn.voxenta.net
+    # Same relay range documented in infrastructure/cluster-bootstrap/coturn/values.yaml
+    # (the manual-bootstrap copy of this same underlying chart) — keep both in sync.
+    # 49 UDP ports is sized for demo/exam-scale concurrent relayed calls (audio-only,
+    # so each active TURN allocation needs far fewer relay ports than a video call).
+    # Widen (and update infrastructure/cluster-bootstrap/coturn/values.yaml to match)
+    # if concurrent exam load grows.
+    ports:
+      relay:
+        min: 49152
+        max: 49200
+    # No TLS cert configured (coturn.tls.secretName left unset) — matches the
+    # original plan's scope, which never specced TURNS/DTLS for coturn.
+    #
+    # coturn.externalIp is intentionally left unset. For a `target-type: ip` NLB,
+    # whether coturn's automatically-selected relay IP is actually reachable by
+    # far-end WebRTC peers depends on node/pod public-IP assignment, which was
+    # never resolved in the original plan either (the earlier hand-rolled
+    # deployment.yaml didn't set --external-ip). Flagging as an open follow-up,
+    # not a regression introduced here — verify with a real client behind NAT
+    # during Phase 2 bootstrap (runbook.md verify section already has a
+    # "relay candidate" check for exactly this).
+    staticUsers:
+      # Bring-your-own Secret (produced by our own ExternalSecret below), NOT
+      # the chart's own `staticUsers.users:` map (that would bake a plaintext
+      # password into this values.yaml/git).
+      secretName: coturn-static-users
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
+# --- Vox-specific values (NOT part of the coturn dependency's schema) ---
+
+# Fixed, non-secret TURN username. Long-term-credential TURN auth only requires
+# the *password* (TURN_CREDENTIAL) to be secret; the username can be a stable
+# constant. MUST exactly match the "TURN_USERNAME" value seeded into AWS
+# Secrets Manager's `vox/coturn` secret (see runbook.md step 5.10/worksheet.txt
+# [6] — runbook already uses this same literal "vox" in its example CLI command).
+# Why fixed: the coturn chart's `staticUsers.secretName` mounts a Secret whose
+# KEY NAME is the username and whose VALUE is the password — ExternalSecret
+# can't derive a key *name* from another secret's *value*, so the username has
+# to be a value we choose here, not something read dynamically from Secrets Manager.
+turnUsername: vox
+
+externalSecret:
+  refreshInterval: 1h
+  secretStoreRef: aws-secrets-manager

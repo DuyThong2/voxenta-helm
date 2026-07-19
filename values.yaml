@@ -1,0 +1,6 @@
+global:
+  awsRegion: ap-southeast-1
+  imagePullPolicy: IfNotPresent
+  albGroupName: vox-backend
+  certificateArn: ""
+

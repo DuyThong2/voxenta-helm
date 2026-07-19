@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vox
+  labels:
+    app.kubernetes.io/name: vox
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+{{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+{{- end }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: vox
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: vox
+    spec:
+      containers:
+        - name: vox
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: 8080
+              name: http
+          envFrom:
+            - configMapRef:
+                name: vox-config
+            - secretRef:
+                name: vox-env
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+

@@ -1,0 +1,102 @@
+replicaCount: 2
+
+image:
+  repository: <AWS_ACCOUNT_ID>.dkr.ecr.ap-southeast-1.amazonaws.com/vox-agents
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  port: 8000
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 4
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 75
+  targetGPUUtilizationPercentage: "70"
+
+resources:
+  requests:
+    cpu: 500m
+    memory: 1Gi
+  limits:
+    cpu: "1"
+    memory: 2Gi
+    nvidia.com/gpu: 1
+
+# GPU time-slicing in infrastructure/cluster-bootstrap/nvidia-device-plugin/values.yaml
+# exposes 4 virtual nvidia.com/gpu slots per g4dn.xlarge. Keep that value equal to
+# autoscaling.maxReplicas so the normal HPA range fits on one GPU node.
+nodeSelector:
+  karpenter.sh/nodepool: gpu
+
+tolerations:
+  - key: nvidia.com/gpu
+    operator: Equal
+    value: "true"
+    effect: NoSchedule
+
+ingress:
+  enabled: true
+  host: agents.voxenta.net
+  certificateArn: ""
+  albGroupName: vox-backend
+  idleTimeoutSeconds: 3600
+  stickinessSeconds: 7200
+
+config:
+  ENVIRONMENT: production
+  LOG_LEVEL: INFO
+  CHROMA_HOST: agents-chromadb.vox-agents.svc.cluster.local
+  CHROMA_PORT: "8000"
+  VOX_STREAMING_GRPC_ADDR: vox-streaming.vox-streaming.svc.cluster.local:9091
+  STUN_URLS: stun:stun.l.google.com:19302
+  # config/postgresDB_config.py's PostgresSettings has no PG_URI field — it's a
+  # @property computed from these individual fields at read time. Setting a
+  # PG_URI env var directly has zero effect (pydantic-settings silently ignores
+  # it, extra="ignore") — the app would otherwise fall back to its localhost:5433
+  # dev default and fail to connect. PG_PASSWORD is in externalsecret.yaml.
+  PG_HOST: agents-postgresql.vox-agents.svc.cluster.local
+  PG_PORT: "5432"
+  PG_USER: agents
+  PG_DATABASE: agents
+  PG_SSLMODE: disable
+  # config/s3_config.py — shares the exam-upload bucket vox writes to (agents
+  # reads audio back from it). Bucket/prefix/public-url must match
+  # charts/vox/values.yaml's AWS_S3_* exactly.
+  STORAGE_PROVIDER: s3
+  AWS_REGION: ap-southeast-1
+  AWS_S3_PATH_STYLE: "false"
+  S3_BUCKET_NAME: "<FILL_IN:s3_exam_uploads_bucket_name>"
+  AWS_S3_KEY_PREFIX: prod
+  AWS_S3_PUBLIC_BASE_URL: "<FILL_IN:s3_exam_uploads_bucket_public_url>"
+  # config/kafka_config.py's KAFKA_BOOTSTRAP_SERVERS defaults to localhost:9092
+  # (dev-only) — agents doesn't have its own Kafka subchart, it consumes vox's.
+  # KAFKA_CLIENT_ID/KAFKA_CONSUMER_GROUP/topic names keep their code defaults,
+  # already matching what vox publishes on the other side.
+  KAFKA_BOOTSTRAP_SERVERS: vox-kafka.vox.svc.cluster.local:9092
+
+externalSecret:
+  refreshInterval: 1h
+  secretStoreRef: aws-secrets-manager
+
+postgresql:
+  auth:
+    existingSecret: agents-env
+    secretKeys:
+      adminPasswordKey: POSTGRES_PASSWORD
+      userPasswordKey: POSTGRES_PASSWORD
+    username: agents
+    database: agents
+  primary:
+    persistence:
+      enabled: true
+      storageClass: gp3
+      size: 10Gi
+
+chromadb:
+  chromadb:
+    data:
+      volumeSize: 10Gi
+      storageClass: gp3

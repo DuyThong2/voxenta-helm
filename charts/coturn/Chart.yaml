@@ -1,0 +1,26 @@
+apiVersion: v2
+name: coturn
+description: >-
+  TURN/STUN relay for Vox WebRTC (agents + WPF). Wraps the real, published
+  pschichtel/helm-charts "coturn" chart (dependency below) with project-specific
+  values (ESO-backed static-user auth, NLB annotations, relay port range) —
+  see values.yaml and templates/externalsecret.yaml for the Vox-specific glue.
+type: application
+version: 0.1.0
+appVersion: "4.14.0-r0"
+dependencies:
+  # Real, actively-maintained, published chart — verified 2026-07-19 by fetching
+  # and `helm template`-rendering it directly:
+  # https://artifacthub.io/packages/helm/schichtel/coturn
+  # Repo index: https://schich.tel/helm-charts/index.yaml
+  # (NOT small-hack/coturn-chart from the original spec — that repo was renamed
+  # to open-engineering-nl/coturn-chart and is now archived/unmaintained. Also
+  # NOT jaconi/coturn — verified via `helm template` that its `users[].secretKeyRef`
+  # feature is broken in v1.0.5: it emits `--user=name:$$SECRET_ENV_VAR` which is
+  # not valid Kubernetes container-arg substitution syntax `$(VAR)`, so the TURN
+  # password would literally be the string "$$SECRET_ENV_VAR" instead of the real
+  # secret. schichtel/coturn instead mounts the Secret as a file and reads it via
+  # a real shell entrypoint (src/entrypoint.sh) — verified working by rendering.)
+  - name: coturn
+    version: "1.8.0"
+    repository: "https://schich.tel/helm-charts"
