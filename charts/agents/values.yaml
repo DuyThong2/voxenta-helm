@@ -1,13 +1,10 @@
 replicaCount: 2
-
 image:
   repository: 975049890010.dkr.ecr.ap-southeast-1.amazonaws.com/vox-agents
-  tag: latest
+  tag: 95d0949
   pullPolicy: IfNotPresent
-
 service:
   port: 8000
-
 autoscaling:
   enabled: true
   minReplicas: 2
@@ -15,7 +12,6 @@ autoscaling:
   targetCPUUtilizationPercentage: 70
   targetMemoryUtilizationPercentage: 75
   targetGPUUtilizationPercentage: "70"
-
 resources:
   requests:
     cpu: 500m
@@ -24,19 +20,16 @@ resources:
     cpu: "1"
     memory: 2Gi
     nvidia.com/gpu: 1
-
 # GPU time-slicing in infrastructure/cluster-bootstrap/nvidia-device-plugin/values.yaml
 # exposes 4 virtual nvidia.com/gpu slots per g4dn.xlarge. Keep that value equal to
 # autoscaling.maxReplicas so the normal HPA range fits on one GPU node.
 nodeSelector:
   karpenter.sh/nodepool: gpu
-
 tolerations:
   - key: nvidia.com/gpu
     operator: Equal
     value: "true"
     effect: NoSchedule
-
 ingress:
   enabled: true
   host: agents.voxenta.net
@@ -44,7 +37,6 @@ ingress:
   albGroupName: vox-backend
   idleTimeoutSeconds: 3600
   stickinessSeconds: 7200
-
 config:
   ENVIRONMENT: production
   LOG_LEVEL: INFO
@@ -76,11 +68,9 @@ config:
   # KAFKA_CLIENT_ID/KAFKA_CONSUMER_GROUP/topic names keep their code defaults,
   # already matching what vox publishes on the other side.
   KAFKA_BOOTSTRAP_SERVERS: vox-kafka.vox.svc.cluster.local:9092
-
 externalSecret:
   refreshInterval: 1h
   secretStoreRef: aws-secrets-manager
-
 postgresql:
   auth:
     existingSecret: agents-env
@@ -94,7 +84,6 @@ postgresql:
       enabled: true
       storageClass: gp3
       size: 10Gi
-
 chromadb:
   chromadb:
     data:
