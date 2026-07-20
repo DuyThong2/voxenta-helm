@@ -55,8 +55,9 @@ config:
   STORAGE_PRESIGN_MINUTES: "15"
   FRAME_CONVERT_CONCURRENCY: "2"
   FRAME_INTERVAL_SECS: "5"
-  # Real frontend origin, not localhost:5173 (dev value in vox-streaming/.env).
-  ALLOWED_ORIGINS: https://voxenta.net
+  # Wildcard -- matches vox/agents (all JWT-bearer auth, not cookie-based, so
+  # wildcard CORS doesn't expose credentials the way it would with cookies).
+  ALLOWED_ORIGINS: "*"
   # EXAM_SERVICE_GRPC_ADDR / EXAM_SERVICE_CA_FILE / GRPC_CERT_FILE / GRPC_KEY_FILE /
   # GRPC_CA_FILE / SEGMENT_TEMP_DIR / SLACK_WEBHOOK_URL: deliberately left unset,
   # matching vox-streaming/.env exactly -- vox's own gRPC ExamService isn't built
