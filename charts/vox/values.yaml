@@ -108,6 +108,16 @@ redis:
     extraFlags:
       - --appendonly yes
 kafka:
+  # bitnami/kafka has zero public tags left on Docker Hub (Broadcom moved
+  # versioned images behind the paid "Bitnami Secure Images" tier) -- confirmed
+  # for real during deploy: ImagePullBackOff, "not found". bitnamilegacy/kafka
+  # has the exact same image/tag (just relocated org, not a different build)
+  # -- verified this tag exists there before switching. postgresql/redis
+  # subcharts still pull fine from bitnami/ as of this deploy; only override
+  # the one that's actually broken, don't preemptively touch those.
+  image:
+    registry: docker.io
+    repository: bitnamilegacy/kafka
   kraft:
     enabled: true
   controller:
