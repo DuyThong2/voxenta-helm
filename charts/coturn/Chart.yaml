@@ -1,26 +1,35 @@
 apiVersion: v2
 name: coturn
 description: >-
-  TURN/STUN relay for Vox WebRTC (agents + WPF). Wraps the real, published
-  pschichtel/helm-charts "coturn" chart (dependency below) with project-specific
-  values (ESO-backed static-user auth, NLB annotations, relay port range) —
-  see values.yaml and templates/externalsecret.yaml for the Vox-specific glue.
+  TURN/STUN relay for Vox WebRTC (agents + WPF). Wraps a locally-vendored,
+  patched copy of pschichtel/helm-charts "coturn" (see charts/coturn/, NOT a
+  Helm `dependencies:` entry -- see note below) with project-specific values
+  (ESO-backed static-user auth, NLB annotations, relay port range) — see
+  values.yaml and templates/externalsecret.yaml for the Vox-specific glue.
 type: application
 version: 0.1.0
 appVersion: "4.14.0-r0"
-dependencies:
-  # Real, actively-maintained, published chart — verified 2026-07-19 by fetching
-  # and `helm template`-rendering it directly:
-  # https://artifacthub.io/packages/helm/schichtel/coturn
-  # Repo index: https://schich.tel/helm-charts/index.yaml
-  # (NOT small-hack/coturn-chart from the original spec — that repo was renamed
-  # to open-engineering-nl/coturn-chart and is now archived/unmaintained. Also
-  # NOT jaconi/coturn — verified via `helm template` that its `users[].secretKeyRef`
-  # feature is broken in v1.0.5: it emits `--user=name:$$SECRET_ENV_VAR` which is
-  # not valid Kubernetes container-arg substitution syntax `$(VAR)`, so the TURN
-  # password would literally be the string "$$SECRET_ENV_VAR" instead of the real
-  # secret. schichtel/coturn instead mounts the Secret as a file and reads it via
-  # a real shell entrypoint (src/entrypoint.sh) — verified working by rendering.)
-  - name: coturn
-    version: "1.8.0"
-    repository: "https://schich.tel/helm-charts"
+# NO `dependencies:` block on purpose -- charts/coturn/ is a locally-patched,
+# unpacked copy (NOT fetched via `helm dependency update`), forked from
+# pschichtel/helm-charts coturn v1.8.0
+# (https://artifacthub.io/packages/helm/schichtel/coturn,
+# https://schich.tel/helm-charts/index.yaml). The ONE change from upstream:
+# templates/service.yaml's Service now reads a separate
+# `coturn.ports.tcpService` value for the TCP listener's external port
+# (defaults to null -- falls back to upstream's original single-port
+# behavior) -- see the long comment on that key in
+# charts/coturn/values.yaml for why (AWS's Load Balancer Controller silently
+# drops one of {TCP,UDP} when both share one port number on an NLB Service;
+# confirmed live, no error anywhere). Re-verified 2026-07-20 chart source is
+# genuinely correct/well-maintained (same evaluation as before, unchanged):
+# NOT small-hack/coturn-chart (renamed to open-engineering-nl/coturn-chart,
+# now archived/unmaintained), NOT jaconi/coturn (v1.0.5's
+# `users[].secretKeyRef` emits invalid container-arg substitution syntax,
+# password ends up literally "$$SECRET_ENV_VAR" instead of the real secret).
+#
+# DO NOT run `helm dependency update`/`build` in this chart -- there is
+# nothing to fetch, and if a `dependencies:` entry is ever re-added, it WILL
+# overwrite this patched charts/coturn/ directory with a pristine .tgz,
+# silently reintroducing the TCP/UDP port-conflict bug. To pull a real
+# upstream version bump, manually re-apply this same patch to the new
+# version's templates/service.yaml.

@@ -1,0 +1,6 @@
+apiVersion: v2
+appVersion: 4.14.0-r0
+description: A Helm chart for coturn
+name: coturn
+type: application
+version: 1.8.0

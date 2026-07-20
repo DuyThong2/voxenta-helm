@@ -1,6 +1,0 @@
-dependencies:
-- name: coturn
-  repository: https://schich.tel/helm-charts
-  version: 1.8.0
-digest: sha256:273440f0c7d295b6214bcb3c905142e09884c0eff518d70a0d0c79c84468f947
-generated: "2026-07-19T10:48:57.7841396+07:00"

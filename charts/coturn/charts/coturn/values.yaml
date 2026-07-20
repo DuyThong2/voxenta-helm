@@ -1,0 +1,116 @@
+image:
+  repository: ghcr.io/coturn/coturn
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+deploymentAnnotations: {}
+deploymentLabels: {}
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+# fsGroup: 2000
+
+securityContext: {}
+# capabilities:
+#   drop:
+#   - ALL
+# readOnlyRootFilesystem: true
+# runAsNonRoot: true
+# runAsUser: 1000
+
+service:
+  annotations: {}
+  mainAnnotations: {}
+  relayAnnotations: {}
+  separateRelayService: false
+  type: ClusterIP
+  loadBalancerIP: null
+  externalTrafficPolicy: Local
+  allocateLoadBalancerNodePorts: true
+
+resources: {}
+# We usually recommend not to specify default resources and to leave this as a conscious
+# choice for the user. This also increases chances charts run on environments with little
+# resources, such as Minikube. If you do want to specify resources, uncomment the following
+# lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+# limits:
+#   cpu: 100m
+#   memory: 128Mi
+# requests:
+#   cpu: 100m
+#   memory: 128Mi
+
+# Additional volumes on the output Deployment definition.
+volumes: []
+# - name: foo
+#   secret:
+#     secretName: mysecret
+#     optional: false
+
+# Additional volumeMounts on the output Deployment definition.
+volumeMounts: []
+# - name: foo
+#   mountPath: "/etc/foo"
+#   readOnly: true
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+strategy:
+  type: Recreate
+
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: false
+
+coturn:
+  realm: example.org
+  mobility: true
+  # if behind a NAT provide the 1:1 NAT'ted external IP
+  externalIp: null
+  ports:
+    listening: 3478
+    # LOCAL PATCH (not upstream) -- lets the Service's TCP listener use a
+    # different EXTERNAL port number than UDP, while both still target the
+    # container's real `listening` port. Only needed on AWS: the Load
+    # Balancer Controller silently drops one of the two listeners when a
+    # Service has TCP and UDP sharing the identical port number on an NLB
+    # (confirmed live: UDP:3478 never got a target group at all, no error
+    # anywhere). Leave unset (null) to keep upstream's original behavior
+    # (both TCP and UDP on `listening`) -- e.g. for non-AWS/local use.
+    tcpService: null
+    tlsListening: 5349
+    relay:
+      min: 49152
+      max: 65535
+  tls:
+    secretName: null
+    certManager:
+      enabled: false
+      issuerRef: null
+      extraDnsNames: []
+      secretTemplate: null
+  # generate using `turnadmin -P -p <password>` if wanted
+  cliPasswordHash: null
+  staticSecret:
+    secretName: null
+    secretKey: secret
+    value: null
+  staticUsers:
+    secretName: null
+    users: {}
+  logging:
+    verbose: true
+    veryVerbose: false
+    logBinding: false
+  extraConfig: null

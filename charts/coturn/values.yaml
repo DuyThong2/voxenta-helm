@@ -16,13 +16,25 @@ coturn:
 
   coturn:
     realm: turn.voxenta.net
-    # Same relay range documented in infrastructure/cluster-bootstrap/coturn/values.yaml
-    # (the manual-bootstrap copy of this same underlying chart) — keep both in sync.
-    # 49 UDP ports is sized for demo/exam-scale concurrent relayed calls (audio-only,
-    # so each active TURN allocation needs far fewer relay ports than a video call).
-    # Widen (and update infrastructure/cluster-bootstrap/coturn/values.yaml to match)
-    # if concurrent exam load grows.
     ports:
+      # UDP stays 3478 (unchanged, still the primary/actually-used transport).
+      # TCP moved to a different EXTERNAL Service port -- see the long comment
+      # on this key in charts/coturn/charts/coturn/values.yaml for why: AWS's
+      # Load Balancer Controller silently drops one of {TCP,UDP} when both
+      # share the same port number on one NLB Service (confirmed live, no
+      # error anywhere -- UDP:3478 simply never got a target group). Nothing
+      # currently uses TURN-over-TCP (TURN_URL has no ?transport=tcp anywhere
+      # in agents/vox-streaming/WPF), so this only restores it as an
+      # available fallback for restrictive networks (e.g. a school lab that
+      # blocks outbound UDP) -- not required for the current UDP-only path to
+      # work.
+      tcpService: 3479
+      # Same relay range documented in infrastructure/cluster-bootstrap/coturn/values.yaml
+      # (the manual-bootstrap copy of this same underlying chart) — keep both in sync.
+      # 49 UDP ports is sized for demo/exam-scale concurrent relayed calls (audio-only,
+      # so each active TURN allocation needs far fewer relay ports than a video call).
+      # Widen (and update infrastructure/cluster-bootstrap/coturn/values.yaml to match)
+      # if concurrent exam load grows.
       relay:
         min: 49152
         max: 49200
