@@ -9,21 +9,19 @@ autoscaling:
   enabled: true
   minReplicas: 2
   maxReplicas: 6
-  targetCPUUtilizationPercentage: 70
-  targetMemoryUtilizationPercentage: 75
+  targetCPUUtilizationPercentage: 85
+  targetMemoryUtilizationPercentage: 85
 resources:
-  # memory.requests/limits doubled from the original 512Mi/1Gi -- real usage
-  # measured at 583-606Mi per pod (JVM baseline: heap+metaspace+overhead)
-  # even under light/idle load, was already above the original 512Mi request
-  # before any real traffic. That made HPA see memory at 115%/75% and scale
-  # to max (6/6 pods) for no real reason. CPU unchanged -- it wasn't the
-  # bottleneck (only 14-19% used).
+  # RAM raised generously (measured usage ~813-870Mi per pod via kubectl top,
+  # was ~85% of the old 1Gi request -- constantly tripping the old 75%
+  # target). CPU kept close to the original 500m -- measured usage was only
+  # 157-230m, not the bottleneck, no need to grow it much.
   requests:
-    cpu: 500m
-    memory: 1Gi
+    cpu: 600m
+    memory: 2Gi
   limits:
     cpu: "1"
-    memory: 2Gi
+    memory: 4Gi
 ingress:
   enabled: true
   host: api.voxenta.net

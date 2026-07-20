@@ -11,8 +11,8 @@ autoscaling:
   enabled: true
   minReplicas: 1
   maxReplicas: 3
-  targetCPUUtilizationPercentage: 70
-  targetMemoryUtilizationPercentage: 75
+  targetCPUUtilizationPercentage: 85
+  targetMemoryUtilizationPercentage: 85
 # TEMPORARY: GPU quota for this AWS account is 0 (request pending approval,
 # CASE_OPENED as of this deploy) -- running YOLO (yolov8n, the "nano" variant,
 # already sized for CPU/edge inference) on CPU instead so agents isn't
@@ -20,13 +20,17 @@ autoscaling:
 # resources below (and the GPU metric block in templates/hpa.yaml, removed
 # in the same commit) once the quota is approved -- both are plain Helm
 # changes, trivially revertable via git.
+# CPU and RAM both raised generously -- measured usage was very light
+# (CPU ~9m, memory ~398Mi via kubectl top) at 1CPU/1Gi, but YOLO inference
+# under real exam load will need real headroom on both, unlike vox (a
+# lightweight Java API server where only RAM needed real growth).
 resources:
   requests:
-    cpu: "1"
-    memory: 1Gi
-  limits:
     cpu: "2"
     memory: 2Gi
+  limits:
+    cpu: "4"
+    memory: 4Gi
 # No nodeSelector/tolerations -- schedules on the `general` NodePool (already
 # allows c5/c6i, compute-optimized/sustained-CPU families, not just
 # t3/t3a burstable) via plain Karpenter bin-packing, no GPU taint to tolerate.
