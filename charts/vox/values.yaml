@@ -7,8 +7,8 @@ service:
   port: 8080
 autoscaling:
   enabled: true
-  minReplicas: 2
-  maxReplicas: 6
+  minReplicas: 1
+  maxReplicas: 3
   targetCPUUtilizationPercentage: 85
   targetMemoryUtilizationPercentage: 85
 resources:

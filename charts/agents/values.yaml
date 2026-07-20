@@ -26,10 +26,10 @@ autoscaling:
 # lightweight Java API server where only RAM needed real growth).
 resources:
   requests:
-    cpu: "2"
+    cpu: "1.5"
     memory: 2Gi
   limits:
-    cpu: "4"
+    cpu: "3"
     memory: 4Gi
 # No nodeSelector/tolerations -- schedules on the `general` NodePool (already
 # allows c5/c6i, compute-optimized/sustained-CPU families, not just
