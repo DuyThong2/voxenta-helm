@@ -32,6 +32,17 @@ ingress:
 
 config:
   SPRING_PROFILES_ACTIVE: prod
+  # DemoEducationDataInitializer (@Order(5), ApplicationRunner) seeds a full
+  # demo dataset on first startup when enabled: 1 School (DEMO-SCH-01), users
+  # (admin/teacher/student, all with DEMO_DATA_PASSWORD below), a
+  # SupportedLanguage row, and 1 QuestionBank + QuestionTopic + Question +
+  # QuestionEvaluationGuide -- enough to actually run an exam end-to-end
+  # without hand-writing SQL against the JPA schema (fragile, easy to drift
+  # from entity/migration changes -- this reuses the app's own tested seeding
+  # code instead). Runs every startup but is idempotent by DEMO_SCHOOL_CODE
+  # (checks School existence first) -- safe to leave "true" across restarts.
+  DEMO_DATA_ENABLED: "true"
+  DEMO_DATA_PASSWORD: "Password@123"
   KAFKA_BOOTSTRAP_SERVERS: vox-kafka.vox.svc.cluster.local:9092
   REDIS_HOST: vox-redis-master.vox.svc.cluster.local
   REDIS_PORT: "6379"
