@@ -27,7 +27,13 @@ ingress:
   host: api.voxenta.net
   certificateArn: "arn:aws:acm:ap-southeast-1:975049890010:certificate/ed1ba235-3c99-432e-a370-5ab0312a4d3a"
   albGroupName: vox-backend
-  idleTimeoutSeconds: 300
+  # Must match agents' 3600 -- all 4 Ingresses share one physical ALB
+  # (group.name: vox-backend), and idle_timeout is a load-balancer-level
+  # attribute, not per-target-group -- mismatched values across group
+  # members block the whole ALB from provisioning (confirmed for real:
+  # "conflicting load balancer attributes idle_timeout.timeout_seconds:
+  # 3600 | 300"). Longer timeout doesn't hurt vox's normal short requests.
+  idleTimeoutSeconds: 3600
 config:
   SPRING_PROFILES_ACTIVE: prod
   # DemoEducationDataInitializer (@Order(5), ApplicationRunner) seeds a full
