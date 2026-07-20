@@ -12,18 +12,18 @@ autoscaling:
   targetCPUUtilizationPercentage: 70
   targetMemoryUtilizationPercentage: 75
 resources:
-  # memory.requests bumped from 512Mi -- real usage measured at 583-606Mi per
-  # pod (JVM baseline: heap+metaspace+overhead) even under light/idle load,
-  # was already above the request before any real traffic. That made HPA see
-  # 115%/75% memory "utilization" and scale to max (6/6) for no real reason.
-  # Set to 2x measured usage for real headroom under actual load (CPU stays
-  # unchanged, only memory was the actual bottleneck).
+  # memory.requests/limits doubled from the original 512Mi/1Gi -- real usage
+  # measured at 583-606Mi per pod (JVM baseline: heap+metaspace+overhead)
+  # even under light/idle load, was already above the original 512Mi request
+  # before any real traffic. That made HPA see memory at 115%/75% and scale
+  # to max (6/6 pods) for no real reason. CPU unchanged -- it wasn't the
+  # bottleneck (only 14-19% used).
   requests:
     cpu: 500m
-    memory: 1792Mi
+    memory: 1Gi
   limits:
     cpu: "1"
-    memory: 3Gi
+    memory: 2Gi
 ingress:
   enabled: true
   host: api.voxenta.net
