@@ -1,7 +1,7 @@
 replicaCount: 2
 image:
   repository: 975049890010.dkr.ecr.ap-southeast-1.amazonaws.com/vox-app
-  tag: a75b573
+  tag: c2419a4
   pullPolicy: IfNotPresent
 service:
   port: 8080
