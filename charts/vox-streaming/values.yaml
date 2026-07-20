@@ -1,22 +1,18 @@
 replicaCount: 1
-
 image:
   repository: 975049890010.dkr.ecr.ap-southeast-1.amazonaws.com/vox-streaming
-  tag: latest
+  tag: 135e141
   pullPolicy: IfNotPresent
-
 service:
   httpPort: 8080
   metricsPort: 9090
   grpcPort: 9091
-
 autoscaling:
   enabled: true
   minReplicas: 1
   maxReplicas: 3
   targetCPUUtilizationPercentage: 70
   targetMemoryUtilizationPercentage: 75
-
 resources:
   requests:
     cpu: 250m
@@ -24,7 +20,6 @@ resources:
   limits:
     cpu: 500m
     memory: 512Mi
-
 ingress:
   enabled: true
   # Currently no caller is wired to this service; deploy the ingress so the route is ready.
@@ -32,7 +27,6 @@ ingress:
   certificateArn: ""
   albGroupName: vox-backend
   idleTimeoutSeconds: 300
-
 config:
   KAFKA_BROKERS: vox-kafka.vox.svc.cluster.local:9092
   KAFKA_CONSUMER_GROUP: vox-streaming
@@ -65,8 +59,6 @@ config:
   # matching vox-streaming/.env exactly -- vox's own gRPC ExamService isn't built
   # yet (readyz reports this dependency "skipped" rather than failing), and this
   # project doesn't use mTLS between services anywhere else either.
-
 externalSecret:
   refreshInterval: 1h
   secretStoreRef: aws-secrets-manager
-
