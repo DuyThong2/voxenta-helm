@@ -11,25 +11,23 @@ autoscaling:
   maxReplicas: 4
   targetCPUUtilizationPercentage: 70
   targetMemoryUtilizationPercentage: 75
-  targetGPUUtilizationPercentage: "70"
+# TEMPORARY: GPU quota for this AWS account is 0 (request pending approval,
+# CASE_OPENED as of this deploy) -- running YOLO (yolov8n, the "nano" variant,
+# already sized for CPU/edge inference) on CPU instead so agents isn't
+# permanently Pending while waiting on AWS. Revert nodeSelector/tolerations/
+# resources below (and the GPU metric block in templates/hpa.yaml, removed
+# in the same commit) once the quota is approved -- both are plain Helm
+# changes, trivially revertable via git.
 resources:
   requests:
-    cpu: 500m
-    memory: 1Gi
-  limits:
-    cpu: "1"
+    cpu: "2"
     memory: 2Gi
-    nvidia.com/gpu: 1
-# GPU time-slicing in infrastructure/cluster-bootstrap/nvidia-device-plugin/values.yaml
-# exposes 4 virtual nvidia.com/gpu slots per g4dn.xlarge. Keep that value equal to
-# autoscaling.maxReplicas so the normal HPA range fits on one GPU node.
-nodeSelector:
-  karpenter.sh/nodepool: gpu
-tolerations:
-  - key: nvidia.com/gpu
-    operator: Equal
-    value: "true"
-    effect: NoSchedule
+  limits:
+    cpu: "4"
+    memory: 4Gi
+# No nodeSelector/tolerations -- schedules on the `general` NodePool (already
+# allows c5/c6i, compute-optimized/sustained-CPU families, not just
+# t3/t3a burstable) via plain Karpenter bin-packing, no GPU taint to tolerate.
 ingress:
   enabled: true
   host: agents.voxenta.net

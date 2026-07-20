@@ -23,14 +23,5 @@ spec:
         target:
           type: Utilization
           averageUtilization: {{ .Values.autoscaling.targetMemoryUtilizationPercentage }}
-    # GPU metric depends on kube-prometheus-stack + dcgm-exporter + prometheus-adapter.
-    # vox/vox-streaming HPAs only use the CPU/memory metrics above.
-    - type: Pods
-      pods:
-        metric:
-          name: agents_gpu_utilization
-        target:
-          type: AverageValue
-          averageValue: {{ .Values.autoscaling.targetGPUUtilizationPercentage | quote }}
 {{- end }}
 
