@@ -11,6 +11,10 @@ metadata:
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80},{"HTTPS":443}]'
     alb.ingress.kubernetes.io/ssl-redirect: "443"
     alb.ingress.kubernetes.io/backend-protocol: HTTP
+    # Root "/" has no mapping (Spring's default 404), so ALB's default 200-on-"/"
+    # health check always fails. /api/v1/status is the one endpoint that's both
+    # unauthenticated (SecurityConfig PERMITTED_PATTERNS) and returns 200.
+    alb.ingress.kubernetes.io/healthcheck-path: /api/v1/status
     alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds={{ .Values.ingress.idleTimeoutSeconds }}
 {{- if .Values.ingress.certificateArn }}
     alb.ingress.kubernetes.io/certificate-arn: {{ .Values.ingress.certificateArn | quote }}
