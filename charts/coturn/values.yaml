@@ -3,6 +3,34 @@
 # in Chart.yaml — this is standard Helm subchart value-scoping, NOT a naming
 # collision with the fields further down in this file.
 coturn:
+  # hostNetwork migration (2026-07-20, DONE -- was a documented "planned, not
+  # done" follow-up earlier the same day, see runbook.md's coturn section for
+  # the full incident writeup). Relay ports now bind straight to the static
+  # node's real network via hostNetwork instead of going through the
+  # Service/NLB -- the per-port-listener Service design could never scale the
+  # relay pool past ~48 concurrent calls (AWS NLBs hard-cap at 50 listeners
+  # total, non-adjustable, confirmed live via a real CreateListener
+  # TooManyListeners error). Control ports (TCP/UDP 3478/3479) are UNCHANGED,
+  # still served via the Service/NLB below -- only the relay range moved.
+  #
+  # MUST be nested here (inside `coturn:`), NOT a top-level sibling of it --
+  # Helm scopes a local subchart's values by its directory name under
+  # charts/, which is "coturn" here, matching this key. A top-level
+  # hostNetwork/nodeSelector would silently stay in the PARENT chart's own
+  # values and never reach the subchart's template at all (caught this via
+  # `helm template` before deploying -- the first version of this patch had
+  # exactly that bug, rendered with hostNetwork/dnsPolicy simply missing,
+  # no error).
+  hostNetwork: true
+  # Pinned to the static node group specifically (NOT the Karpenter-managed
+  # `general` pool, which churns/consolidates routinely) -- see
+  # infrastructure/infrastructureBE/main.tf's aws_eip.coturn comment for why
+  # that matters: this node's public IP is now a manually-associated Elastic
+  # IP (13.250.131.165), and an IP pin is worthless on a node that gets
+  # replaced out from under it.
+  nodeSelector:
+    eks.amazonaws.com/nodegroup: vox-eks-static-ng
+
   service:
     type: LoadBalancer
     externalTrafficPolicy: Local
@@ -16,49 +44,38 @@ coturn:
 
   coturn:
     realm: turn.voxenta.net
+    # Elastic IP manually associated with the static node's primary ENI (see
+    # infrastructure/infrastructureBE/main.tf's aws_eip.coturn) -- NOT
+    # automated end-to-end (see that resource's comment: the static node
+    # group's actual instance isn't a directly Terraform-owned resource, so
+    # there's no stable reference to attach this to declaratively). If the
+    # static node is ever replaced, re-associate the EIP AND update this
+    # value AND vox/coturn's TURN_URL secret -- 3 manual steps, see
+    # runbook.md's coturn hostNetwork section.
+    externalIp: "13.250.131.165"
     ports:
       # UDP stays 3478 (unchanged, still the primary/actually-used transport).
       # TCP moved to a different EXTERNAL Service port -- see the long comment
-      # on this key in charts/coturn/charts/coturn/values.yaml for why: an
-      # AWS NLB hard-caps at 50 listeners TOTAL per load balancer (Service
-      # Quota L-57A373D6, NOT adjustable). This Service's listener count is
-      # 2 control ports (TCP+UDP) + the relay range below -- confirmed live
-      # via a real CreateListener 400 TooManyListeners error the moment this
-      # went from 1 control port (UDP and TCP sharing 3478, so AWS/the
-      # controller only ever actually created ONE of them, silently dropping
-      # UDP -- NOT a Kubernetes port-ordering quirk as first suspected) to 2
-      # distinct control ports without shrinking the relay range to
-      # compensate. Nothing currently uses TURN-over-TCP (TURN_URL has no
-      # ?transport=tcp anywhere in agents/vox-streaming/WPF) -- this restores
-      # it as an available fallback for restrictive networks (e.g. a school
-      # lab blocking outbound UDP), not required for the current UDP-only
-      # path to work.
+      # on this key in charts/coturn/charts/coturn/values.yaml for why. Both
+      # still go through the Service/NLB (unchanged by the hostNetwork
+      # migration -- only the relay range below moved off it).
       tcpService: 3479
       # Same relay range documented in infrastructure/cluster-bootstrap/coturn/values.yaml
       # (the manual-bootstrap copy of this same underlying chart) — keep both in sync.
-      # Maxed out at 48 -- the most this can be while keeping BOTH control
-      # listeners (TCP+UDP above): 2 + 48 = 50, exactly the NLB hard cap
-      # (Service Quota L-57A373D6, not adjustable). Real target is only ~30
-      # concurrent TURN-relayed calls (confirmed 2026-07-20) -- NOT one relay
-      # port per possible exam-taker, most direct/STUN-reachable clients
-      # never touch the relay pool at all -- but there's no benefit to
-      # sizing below the ceiling here, so this uses all 48 available. Zero
-      # headroom left: adding ANY other listener (e.g. TLS/DTLS) requires
-      # shrinking this first, or dropping one control listener.
+      # Widened to the FULL IANA ephemeral range now that hostNetwork removed
+      # the NLB's 50-listener cap entirely (this range is a Security Group
+      # rule now -- infrastructure/infrastructureBE/main.tf's
+      # aws_security_group_rule.coturn_relay_hostnetwork -- SGs have no such
+      # per-rule-count limit). Real target is only ~30 concurrent
+      # TURN-relayed calls (confirmed 2026-07-20), so this is deliberately
+      # oversized for headroom (was capacity-constrained at 48 before this
+      # migration; isn't anymore) -- shrinking it buys nothing now, so no
+      # reason to.
       relay:
         min: 49152
-        max: 49199
+        max: 65535
     # No TLS cert configured (coturn.tls.secretName left unset) — matches the
     # original plan's scope, which never specced TURNS/DTLS for coturn.
-    #
-    # coturn.externalIp is intentionally left unset. For a `target-type: ip` NLB,
-    # whether coturn's automatically-selected relay IP is actually reachable by
-    # far-end WebRTC peers depends on node/pod public-IP assignment, which was
-    # never resolved in the original plan either (the earlier hand-rolled
-    # deployment.yaml didn't set --external-ip). Flagging as an open follow-up,
-    # not a regression introduced here — verify with a real client behind NAT
-    # during Phase 2 bootstrap (runbook.md verify section already has a
-    # "relay candidate" check for exactly this).
     staticUsers:
       # Bring-your-own Secret (produced by our own ExternalSecret below), NOT
       # the chart's own `staticUsers.users:` map (that would bake a plaintext

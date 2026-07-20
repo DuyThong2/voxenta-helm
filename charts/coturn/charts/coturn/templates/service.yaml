@@ -35,7 +35,11 @@ spec:
       protocol: UDP
       targetPort: {{ .Values.coturn.ports.tlsListening }}
     {{- end }}
-    {{- if not .Values.service.separateRelayService }}
+    {{- /* LOCAL PATCH -- with hostNetwork the relay range binds straight to
+    the node, no Service exposure needed (or possible without hitting the
+    NLB's 50-listener cap again) -- see the long comment on this in
+    values.yaml/deployment.yaml. */}}
+    {{- if and (not .Values.service.separateRelayService) (not .Values.hostNetwork) }}
     {{- range untilStep (.Values.coturn.ports.relay.min | int) (add .Values.coturn.ports.relay.max 1 | int) 1 }}
     - name: relay-{{ . }}
       port: {{ . }}

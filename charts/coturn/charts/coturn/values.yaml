@@ -59,6 +59,12 @@ volumeMounts: []
 #   mountPath: "/etc/foo"
 #   readOnly: true
 
+# LOCAL PATCH (not upstream) -- see the matching `{{- if .Values.hostNetwork }}`
+# block in templates/deployment.yaml. Off by default (upstream's original
+# Service/NLB-based relay-port exposure), so this only changes behavior for
+# whoever explicitly sets it true.
+hostNetwork: false
+
 nodeSelector: {}
 
 tolerations: []

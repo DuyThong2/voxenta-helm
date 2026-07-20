@@ -32,6 +32,18 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
+      {{- if .Values.hostNetwork }}
+      # LOCAL PATCH (not upstream) -- relay ports bind straight to the node's
+      # real network instead of going through the Service/NLB (see the long
+      # comment on .Values.coturn.ports.relay in the parent chart's
+      # values.yaml for why: AWS NLBs hard-cap at 50 listeners total,
+      # non-adjustable, and the old per-port-listener Service design could
+      # never scale the relay pool past ~48). dnsPolicy must change to match
+      # -- the pod's netns is now the node's, so the default in-cluster
+      # resolv.conf wouldn't resolve cluster-internal names correctly.
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      {{- end }}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
