@@ -25,7 +25,7 @@ resources:
 ingress:
   enabled: true
   host: api.voxenta.net
-  certificateArn: ""
+  certificateArn: "arn:aws:acm:ap-southeast-1:975049890010:certificate/ed1ba235-3c99-432e-a370-5ab0312a4d3a"
   albGroupName: vox-backend
   idleTimeoutSeconds: 300
 config:
