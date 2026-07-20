@@ -20,11 +20,11 @@ autoscaling:
 # changes, trivially revertable via git.
 resources:
   requests:
+    cpu: "1"
+    memory: 1Gi
+  limits:
     cpu: "2"
     memory: 2Gi
-  limits:
-    cpu: "4"
-    memory: 4Gi
 # No nodeSelector/tolerations -- schedules on the `general` NodePool (already
 # allows c5/c6i, compute-optimized/sustained-CPU families, not just
 # t3/t3a burstable) via plain Karpenter bin-packing, no GPU taint to tolerate.
