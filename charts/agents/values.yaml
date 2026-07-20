@@ -1,4 +1,4 @@
-replicaCount: 2
+replicaCount: 1
 image:
   repository: 975049890010.dkr.ecr.ap-southeast-1.amazonaws.com/vox-agents
   tag: 04078aa
@@ -6,9 +6,11 @@ image:
 service:
   port: 8000
 autoscaling:
+  # TEMPORARY: starts at 1 pod for a controlled first test run on the new
+  # CPU-only setup, can scale up to 3 under load. Revisit once confirmed stable.
   enabled: true
-  minReplicas: 2
-  maxReplicas: 4
+  minReplicas: 1
+  maxReplicas: 3
   targetCPUUtilizationPercentage: 70
   targetMemoryUtilizationPercentage: 75
 # TEMPORARY: GPU quota for this AWS account is 0 (request pending approval,
