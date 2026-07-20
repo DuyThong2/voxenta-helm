@@ -82,10 +82,22 @@ spec:
             containerPort: {{ .Values.coturn.ports.tlsListening }}
             protocol: UDP
           {{- end }}
+          {{- /* LOCAL PATCH -- with hostNetwork, containerPort declarations don't
+          gate anything real (the process can bind any host port regardless of
+          what's declared; the Security Group rule is what actually controls
+          external access -- see infrastructureBE's
+          aws_security_group_rule.coturn_relay_hostnetwork). Skipping this loop
+          avoids generating one entry PER PORT in the relay range: with the range
+          widened to the full IANA span (49152-65535, ~16383 ports) after this
+          migration, the un-gated version produced a ~49000-line Deployment
+          manifest that ArgoCD's apply then timed out on for real
+          ("context deadline exceeded") -- confirmed live, not a hypothetical. */}}
+          {{- if not .Values.hostNetwork }}
           {{- range untilStep (.Values.coturn.ports.relay.min | int) (add .Values.coturn.ports.relay.max 1 | int) 1 }}
           - name: relay-{{ . }}
             containerPort: {{ . }}
             protocol: UDP
+          {{- end }}
           {{- end }}
           livenessProbe:
             tcpSocket:
