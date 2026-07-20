@@ -1,20 +1,16 @@
 replicaCount: 2
-
 image:
   repository: 975049890010.dkr.ecr.ap-southeast-1.amazonaws.com/vox-app
-  tag: latest
+  tag: a75b573
   pullPolicy: IfNotPresent
-
 service:
   port: 8080
-
 autoscaling:
   enabled: true
   minReplicas: 2
   maxReplicas: 6
   targetCPUUtilizationPercentage: 70
   targetMemoryUtilizationPercentage: 75
-
 resources:
   requests:
     cpu: 500m
@@ -22,14 +18,12 @@ resources:
   limits:
     cpu: "1"
     memory: 1Gi
-
 ingress:
   enabled: true
   host: api.voxenta.net
   certificateArn: ""
   albGroupName: vox-backend
   idleTimeoutSeconds: 300
-
 config:
   SPRING_PROFILES_ACTIVE: prod
   KAFKA_BOOTSTRAP_SERVERS: vox-kafka.vox.svc.cluster.local:9092
@@ -61,11 +55,9 @@ config:
   AWS_S3_BUCKET: vox-exam-uploads
   AWS_S3_KEY_PREFIX: prod
   AWS_S3_PUBLIC_BASE_URL: https://vox-exam-uploads.s3.ap-southeast-1.amazonaws.com
-
 externalSecret:
   refreshInterval: 1h
   secretStoreRef: aws-secrets-manager
-
 postgresql:
   auth:
     existingSecret: vox-env
@@ -91,7 +83,6 @@ postgresql:
         service.beta.kubernetes.io/aws-load-balancer-type: nlb
         service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
         service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
-
 redis:
   architecture: standalone
   auth:
@@ -105,7 +96,6 @@ redis:
       size: 5Gi
     extraFlags:
       - --appendonly yes
-
 kafka:
   kraft:
     enabled: true
