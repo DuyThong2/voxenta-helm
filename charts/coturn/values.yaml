@@ -19,25 +19,35 @@ coturn:
     ports:
       # UDP stays 3478 (unchanged, still the primary/actually-used transport).
       # TCP moved to a different EXTERNAL Service port -- see the long comment
-      # on this key in charts/coturn/charts/coturn/values.yaml for why: AWS's
-      # Load Balancer Controller silently drops one of {TCP,UDP} when both
-      # share the same port number on one NLB Service (confirmed live, no
-      # error anywhere -- UDP:3478 simply never got a target group). Nothing
-      # currently uses TURN-over-TCP (TURN_URL has no ?transport=tcp anywhere
-      # in agents/vox-streaming/WPF), so this only restores it as an
-      # available fallback for restrictive networks (e.g. a school lab that
-      # blocks outbound UDP) -- not required for the current UDP-only path to
-      # work.
+      # on this key in charts/coturn/charts/coturn/values.yaml for why: an
+      # AWS NLB hard-caps at 50 listeners TOTAL per load balancer (Service
+      # Quota L-57A373D6, NOT adjustable). This Service's listener count is
+      # 2 control ports (TCP+UDP) + the relay range below -- confirmed live
+      # via a real CreateListener 400 TooManyListeners error the moment this
+      # went from 1 control port (UDP and TCP sharing 3478, so AWS/the
+      # controller only ever actually created ONE of them, silently dropping
+      # UDP -- NOT a Kubernetes port-ordering quirk as first suspected) to 2
+      # distinct control ports without shrinking the relay range to
+      # compensate. Nothing currently uses TURN-over-TCP (TURN_URL has no
+      # ?transport=tcp anywhere in agents/vox-streaming/WPF) -- this restores
+      # it as an available fallback for restrictive networks (e.g. a school
+      # lab blocking outbound UDP), not required for the current UDP-only
+      # path to work.
       tcpService: 3479
       # Same relay range documented in infrastructure/cluster-bootstrap/coturn/values.yaml
       # (the manual-bootstrap copy of this same underlying chart) — keep both in sync.
-      # 49 UDP ports is sized for demo/exam-scale concurrent relayed calls (audio-only,
-      # so each active TURN allocation needs far fewer relay ports than a video call).
-      # Widen (and update infrastructure/cluster-bootstrap/coturn/values.yaml to match)
-      # if concurrent exam load grows.
+      # Maxed out at 48 -- the most this can be while keeping BOTH control
+      # listeners (TCP+UDP above): 2 + 48 = 50, exactly the NLB hard cap
+      # (Service Quota L-57A373D6, not adjustable). Real target is only ~30
+      # concurrent TURN-relayed calls (confirmed 2026-07-20) -- NOT one relay
+      # port per possible exam-taker, most direct/STUN-reachable clients
+      # never touch the relay pool at all -- but there's no benefit to
+      # sizing below the ceiling here, so this uses all 48 available. Zero
+      # headroom left: adding ANY other listener (e.g. TLS/DTLS) requires
+      # shrinking this first, or dropping one control listener.
       relay:
         min: 49152
-        max: 49200
+        max: 49199
     # No TLS cert configured (coturn.tls.secretName left unset) — matches the
     # original plan's scope, which never specced TURNS/DTLS for coturn.
     #
