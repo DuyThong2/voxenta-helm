@@ -1,7 +1,7 @@
 replicaCount: 1
 image:
   repository: 975049890010.dkr.ecr.ap-southeast-1.amazonaws.com/vox-agents
-  tag: 04078aa
+  tag: 17117da
   pullPolicy: IfNotPresent
 service:
   port: 8000
