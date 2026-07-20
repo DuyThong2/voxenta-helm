@@ -120,6 +120,19 @@ kafka:
     repository: bitnamilegacy/kafka
   kraft:
     enabled: true
+  # Kafka defaults offsets.topic.replication.factor=3 (needs 3 brokers to
+  # replicate the internal __consumer_offsets topic to) -- with only 1
+  # controller/broker (controller.replicaCount: 1, broker.replicaCount: 0),
+  # that requirement can never be satisfied, so the topic silently never gets
+  # created and EVERY consumer group permanently fails with "Group Coordinator
+  # Not Available" -- confirmed for real: `kafka-topics.sh --describe
+  # --topic __consumer_offsets` returned "Topic does not exist". Not a
+  # transient startup delay, doesn't self-resolve. Same reasoning applies to
+  # transaction.state.log.replication.factor (not currently used by any
+  # producer here, but fixing both together avoids hitting this again later).
+  overrideConfiguration:
+    offsets.topic.replication.factor: 1
+    transaction.state.log.replication.factor: 1
   controller:
     replicaCount: 1
     persistence:
