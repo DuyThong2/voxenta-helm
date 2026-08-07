@@ -72,6 +72,17 @@ config:
   # KAFKA_CLIENT_ID/KAFKA_CONSUMER_GROUP/topic names keep their code defaults,
   # already matching what vox publishes on the other side.
   KAFKA_BOOTSTRAP_SERVERS: vox-kafka.vox.svc.cluster.local:9092
+  # practice_session_client.py:15 -- defaults to localhost:8080 (unreachable
+  # from this pod). Used together with PRACTICE_INTERNAL_SECRET (externalsecret.yaml)
+  # to call vox's /internal/practice-sessions/** endpoints.
+  VOX_JAVA_BASE_URL: http://vox.vox.svc.cluster.local:8080
+  # voice_live_client.py:66-71 -- these 3 have code defaults (gpt-realtime-mini /
+  # 2026-04-10 / gpt-4o-mini-transcribe) that silently diverge from what's
+  # actually tested in agents/.env (gpt-realtime / mai-transcribe-1 -- a real,
+  # different, more expensive model). Pin explicitly so prod matches dev.
+  AZURE_VOICELIVE_MODEL: gpt-realtime
+  AZURE_VOICELIVE_API_VERSION: "2026-04-10"
+  AZURE_VOICELIVE_TRANSCRIPTION_MODEL: mai-transcribe-1
 externalSecret:
   refreshInterval: 1h
   secretStoreRef: aws-secrets-manager

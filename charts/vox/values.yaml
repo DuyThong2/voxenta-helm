@@ -12,16 +12,17 @@ autoscaling:
   targetCPUUtilizationPercentage: 85
   targetMemoryUtilizationPercentage: 85
 resources:
-  # RAM raised generously (measured usage ~813-870Mi per pod via kubectl top,
-  # was ~85% of the old 1Gi request -- constantly tripping the old 75%
-  # target). CPU kept close to the original 500m -- measured usage was only
-  # 157-230m, not the bottleneck, no need to grow it much.
+  # Raised 3.5x across the board from the prior 600m/2Gi request, 1/4Gi limit
+  # (which was already RAM-generous per the old note below) -- headroom for the
+  # newly-wired practice-generation HTTP calls to agents + the gRPC call to
+  # vox-streaming (both were previously silently no-op/broken, now actually
+  # firing every request).
   requests:
-    cpu: 600m
-    memory: 2Gi
+    cpu: 2100m
+    memory: 7Gi
   limits:
-    cpu: "1"
-    memory: 4Gi
+    cpu: "3.5"
+    memory: 14Gi
 ingress:
   enabled: true
   host: api.voxenta.net
@@ -76,6 +77,15 @@ config:
   AWS_S3_BUCKET: vox-exam-uploads
   AWS_S3_KEY_PREFIX: prod
   AWS_S3_PUBLIC_BASE_URL: https://vox-exam-uploads.s3.ap-southeast-1.amazonaws.com
+  # Practice-generation clients (TopicGenerationClient/InterestQuizGenerationClient
+  # read app.practice.agents-base-url via APP_PRACTICE_AGENTS_BASE_URL's relaxed
+  # binding; QuestionDiversityClient/PracticeQuestionGenerationClient/
+  # PracticeAgentAvailabilityClient read PRACTICE_AGENTS_BASE_URL directly -- 2
+  # different property-key styles across the 5 classes, both need the same value.
+  # Was entirely unset before (defaulted to localhost:8000, unreachable from this
+  # pod) -- all 5 practice-generation calls were silently broken in prod.
+  APP_PRACTICE_AGENTS_BASE_URL: http://agents.vox-agents.svc.cluster.local:8000
+  PRACTICE_AGENTS_BASE_URL: http://agents.vox-agents.svc.cluster.local:8000
 externalSecret:
   refreshInterval: 1h
   secretStoreRef: aws-secrets-manager

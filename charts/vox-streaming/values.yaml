@@ -14,12 +14,14 @@ autoscaling:
   targetCPUUtilizationPercentage: 70
   targetMemoryUtilizationPercentage: 75
 resources:
+  # Doubled from the original 250m/256Mi request, 500m/512Mi limit -- this had
+  # never been raised since the chart's first commit, unlike vox/agents.
   requests:
-    cpu: 250m
-    memory: 256Mi
-  limits:
     cpu: 500m
     memory: 512Mi
+  limits:
+    cpu: "1"
+    memory: 1Gi
 ingress:
   enabled: true
   # Currently no caller is wired to this service; deploy the ingress so the route is ready.
@@ -63,6 +65,14 @@ config:
   # matching vox-streaming/.env exactly -- vox's own gRPC ExamService isn't built
   # yet (readyz reports this dependency "skipped" rather than failing), and this
   # project doesn't use mTLS between services anywhere else either.
+  # Live-rewind DVR (main.go:620) -- was unset (defaults to false), so this
+  # feature was silently off in prod despite being on in vox-streaming/.env.
+  # AUDIO_BITRATE_K has an explicit (non-blank) dev value, carried through as-is;
+  # the other FFMPEG_INGEST_HLS_*/LIVE_REWIND_WINDOW_MINUTES/
+  # ASSEMBLY_WATCHDOG_INTERVAL_SECS vars are left blank in .env on purpose
+  # (comments say blank -> code default), so not added here either.
+  FFMPEG_INGEST_HLS_ENABLED: "true"
+  FFMPEG_INGEST_HLS_AUDIO_BITRATE_K: "128"
 externalSecret:
   refreshInterval: 1h
   secretStoreRef: aws-secrets-manager
