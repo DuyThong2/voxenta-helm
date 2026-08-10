@@ -31,6 +31,15 @@ resources:
   limits:
     cpu: "3"
     memory: 4Gi
+# Hạn tắt êm khi pod bị thu hồi (rollout, scale-down, node drain của Karpenter).
+#
+# 45s = 10s cho realtime/background.py::drain (chờ tác vụ nền chạy nốt) + phần đóng WebSocket
+# của các phiên thi/luyện đang mở + biên an toàn. Mặc định của k8s là 30s -- vẫn đủ, nhưng khai
+# ra đây để con số 10s trong code có chỗ neo và không phụ thuộc vào mặc định của nền tảng.
+#
+# HẠ giá trị này xuống dưới 15s là phá drain: tác vụ đang đẩy lượt nói lên Kafka sẽ bị SIGKILL
+# cắt ngang, và lượt đó biến mất khỏi bản chấm mà không có gì báo.
+terminationGracePeriodSeconds: 45
 # No nodeSelector/tolerations -- schedules on the `general` NodePool (already
 # allows c5/c6i, compute-optimized/sustained-CPU families, not just
 # t3/t3a burstable) via plain Karpenter bin-packing, no GPU taint to tolerate.

@@ -18,6 +18,7 @@ spec:
       labels:
         app.kubernetes.io/name: agents
     spec:
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
       nodeSelector:
 {{ toYaml .Values.nodeSelector | indent 8 }}
       tolerations:
