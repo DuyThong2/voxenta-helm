@@ -1,0 +1,8 @@
+# This chart only ever runs inside Linux containers/pods -- CRLF anywhere
+# breaks shell scripts baked into ConfigMaps at runtime (real incident
+# 2026-08-10: entrypoint.sh got silently CRLF-converted by a Windows checkout
+# with core.autocrlf=true and no .gitattributes override, causing coturn to
+# CrashLoopBackOff with "env: 'sh\r': No such file or directory" -- the
+# shebang's own interpreter name got a trailing \r appended). Force LF for
+# every text file in this repo, no exceptions.
+* text=auto eol=lf
