@@ -26,8 +26,9 @@ coturn:
   # `general` pool, which churns/consolidates routinely) -- see
   # infrastructure/infrastructureBE/main.tf's aws_eip.coturn comment for why
   # that matters: this node's public IP is now a manually-associated Elastic
-  # IP (13.250.131.165), and an IP pin is worthless on a node that gets
-  # replaced out from under it.
+  # IP (52.76.15.255, reallocated 2026-08-10 after the old 13.250.131.165 was
+  # deliberately deleted to save cost during a pause), and an IP pin is
+  # worthless on a node that gets replaced out from under it.
   nodeSelector:
     eks.amazonaws.com/nodegroup: vox-eks-static-ng
 
@@ -52,7 +53,7 @@ coturn:
     # static node is ever replaced, re-associate the EIP AND update this
     # value AND vox/coturn's TURN_URL secret -- 3 manual steps, see
     # runbook.md's coturn hostNetwork section.
-    externalIp: "13.250.131.165"
+    externalIp: "52.76.15.255"
     ports:
       # UDP stays 3478 (unchanged, still the primary/actually-used transport).
       # TCP moved to a different EXTERNAL Service port -- see the long comment
