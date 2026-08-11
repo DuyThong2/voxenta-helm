@@ -37,6 +37,15 @@ ingress:
   idleTimeoutSeconds: 3600
 config:
   SPRING_PROFILES_ACTIVE: prod
+  # CorsProperties/SecurityConfig#validatedAllowedOrigins -- Java source now
+  # requires this explicitly (rewritten from a wildcard "*" pattern to a
+  # strict allowlist), defaults to localhost:3000/5173 if unset. Was never
+  # set here -- confirmed live 2026-08-11: every cross-origin request from
+  # the real frontend (voxenta.net) got 403 "Invalid CORS request" on
+  # preflight, blocking the entire web app, not just one endpoint. Must
+  # match CloudFront's aliases exactly (infrastructureFE), no trailing
+  # slash/path, comma-separated.
+  CORS_ALLOWED_ORIGINS: "https://voxenta.net,https://www.voxenta.net"
   # DemoEducationDataInitializer (@Order(5), ApplicationRunner) seeds a full
   # demo dataset on first startup when enabled: 1 School (DEMO-SCH-01), users
   # (admin/teacher/student, all with DEMO_DATA_PASSWORD below), a
