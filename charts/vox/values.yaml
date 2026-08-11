@@ -110,6 +110,16 @@ config:
   # Xác nhận thật 2026-08-11: 4 bản ghi READY, s3_key đầy đủ, recording.mp4 tồn tại trong
   # S3 -- chỉ mỗi cột bucket rỗng. PHẢI khớp STORAGE_RECORDING_BUCKET của charts/vox-streaming.
   RECORDING_S3_BUCKET: vox-exam-log
+  # HttpCookieProvider (app.cookie.secure) -- mặc định false vì máy dev chạy http://localhost.
+  # Trên deployment mọi thứ đều HTTPS, để false nghĩa là cookie refresh-token KHÔNG gắn cờ
+  # Secure, tức trình duyệt sẵn sàng gửi nó qua HTTP thuần nếu có ai dụ được sang link http://
+  # -- lộ phiên đăng nhập. Không phải lỗi chức năng (đang chạy vẫn đăng nhập được), mà là lỗ
+  # hổng bảo mật.
+  # SameSite giữ Lax: voxenta.net và api.voxenta.net cùng một site (chung registrable domain
+  # voxenta.net) nên Lax vẫn cho gửi cookie ở request cross-origin giữa hai subdomain. Đổi sang
+  # None sẽ nới rộng hơn mức cần thiết.
+  COOKIE_SECURE: "true"
+  COOKIE_SAME_SITE: Lax
 externalSecret:
   refreshInterval: 1h
   secretStoreRef: aws-secrets-manager

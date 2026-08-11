@@ -41,6 +41,11 @@ config:
   WEBRTC_ADDR: ":8080"
   METRIC_ADDR: ":9090"
   GRPC_ADDR: ":9091"
+  # buildICEServers() (cmd/server/main.go) chỉ thêm STUN khi biến này khác rỗng -- bỏ trống là
+  # peer connection chỉ có candidate host (IP pod, private) + relay TURN, mất hẳn srflx. Vẫn nối
+  # được nhờ TURN nhưng ép mọi luồng đi vòng qua coturn thay vì thử đường thẳng trước.
+  # charts/agents đã set biến này từ đầu; chart này thì không -- chỉ là thiếu sót, không cố ý.
+  STUN_URLS: stun:stun.l.google.com:19302
   STORAGE_REGION: ap-southeast-1
   STORAGE_USE_SSL: "true"
   # Own dedicated bucket for vox-streaming (1 bucket for both frames+recordings,
