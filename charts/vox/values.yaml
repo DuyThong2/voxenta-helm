@@ -35,6 +35,10 @@ ingress:
   # "conflicting load balancer attributes idle_timeout.timeout_seconds:
   # 3600 | 300"). Longer timeout doesn't hurt vox's normal short requests.
   idleTimeoutSeconds: 3600
+  # Xem khối chú thích trong templates/ingress.yaml: vox giữ phiên dựng đề luyện tập
+  # trong RAM của từng pod, nên nhiều replica mà không sticky là hỏng thật (404 khoảng
+  # 2/3 số lần). 7200s khớp agents -- cũng đủ dài hơn hẳn một phiên luyện tập.
+  stickinessSeconds: 7200
 config:
   SPRING_PROFILES_ACTIVE: prod
   # CorsProperties/SecurityConfig#validatedAllowedOrigins -- Java source now

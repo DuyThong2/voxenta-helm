@@ -16,6 +16,21 @@ metadata:
     # unauthenticated (SecurityConfig PERMITTED_PATTERNS) and returns 200.
     alb.ingress.kubernetes.io/healthcheck-path: /api/v1/status
     alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds={{ .Values.ingress.idleTimeoutSeconds }}
+{{- if .Values.ingress.stickinessSeconds }}
+    # Sticky session -- BẮT BUỘC khi replicaCount > 1, không phải tối ưu hoá.
+    #
+    # PracticePaperDraftService (vox, dòng 54) giữ phiên dựng đề trong
+    # `ConcurrentHashMap` của TỪNG JVM. Client tạo draft ở pod A rồi hỏi lại
+    # draftId đó, ALB chia luân phiên sang pod B/C, map ở đó rỗng -> 404
+    # "Không tìm thấy phiên dựng đề, vui lòng chọn lại chủ đề". Với 3 replica thì
+    # hỏng khoảng 2/3 số lần, nên trông như lỗi chập chờn chứ không phải lỗi cố định.
+    #
+    # Đây chỉ là VÁ TRIỆU CHỨNG: stickiness dựa vào cookie của ALB nên vẫn trượt khi
+    # pod bị thay (rollout, Karpenter dời node) hoặc khi client không giữ cookie.
+    # Sửa gốc là đưa draft sang Redis (vox đã có sẵn Redis) -- cần đổi code Java.
+    # charts/agents đã dùng đúng annotation này từ trước, cùng lý do trạng thái nằm ở RAM.
+    alb.ingress.kubernetes.io/target-group-attributes: stickiness.enabled=true,stickiness.lb_cookie.duration_seconds={{ .Values.ingress.stickinessSeconds }}
+{{- end }}
 {{- if .Values.ingress.certificateArn }}
     alb.ingress.kubernetes.io/certificate-arn: {{ .Values.ingress.certificateArn | quote }}
 {{- end }}
