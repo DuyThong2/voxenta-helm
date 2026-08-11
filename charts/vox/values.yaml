@@ -95,6 +95,14 @@ config:
   # pod) -- all 5 practice-generation calls were silently broken in prod.
   APP_PRACTICE_AGENTS_BASE_URL: http://agents.vox-agents.svc.cluster.local:8000
   PRACTICE_AGENTS_BASE_URL: http://agents.vox-agents.svc.cluster.local:8000
+  # application.yaml:38 -- gRPC channel to vox-streaming's HealthService/AlertService.
+  # Default is 0.0.0.0:9096, which only makes sense running vox directly on a dev
+  # machine (0.0.0.0 as a DIAL target resolves back to the caller itself, and 9096
+  # is the docker-compose port; in k8s vox-streaming listens on 9091 --
+  # charts/vox-streaming's service.grpcPort). Was never set here -- confirmed live
+  # 2026-08-11: OTP verify returned 503 for every WPF client because its
+  # HealthCheckGrpcService call got "Connection refused: /0.0.0.0:9096".
+  VOX_STREAMING_GRPC_TARGET: vox-streaming.vox-streaming.svc.cluster.local:9091
 externalSecret:
   refreshInterval: 1h
   secretStoreRef: aws-secrets-manager
