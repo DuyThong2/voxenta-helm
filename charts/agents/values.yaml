@@ -25,13 +25,17 @@ autoscaling:
 # under real exam load will need real headroom on both, unlike vox (a
 # lightweight Java API server where only RAM needed real growth).
 resources:
-  # 1.5x from the prior 1.5/2Gi request, 3/4Gi limit.
+  # Reverted to the pre-session 1.5/2Gi request, 3/4Gi limit -- deliberately
+  # kept well above the idle-measured baseline (real usage ~9-15m CPU/
+  # ~400Mi RAM) as headroom for YOLO CPU inference spikes under real exam
+  # load, not yet observed live. The 2.25/3Gi bump earlier today went beyond
+  # even that intentional headroom for no measured reason.
   requests:
-    cpu: "2.25"
-    memory: 3Gi
+    cpu: "1.5"
+    memory: 2Gi
   limits:
-    cpu: "4.5"
-    memory: 6Gi
+    cpu: "3"
+    memory: 4Gi
 # Hạn tắt êm khi pod bị thu hồi (rollout, scale-down, node drain của Karpenter).
 #
 # 45s = 10s cho realtime/background.py::drain (chờ tác vụ nền chạy nốt) + phần đóng WebSocket

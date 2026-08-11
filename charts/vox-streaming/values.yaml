@@ -14,13 +14,15 @@ autoscaling:
   targetCPUUtilizationPercentage: 70
   targetMemoryUtilizationPercentage: 75
 resources:
-  # Doubled again from the prior 500m/512Mi request, 1/1Gi limit (itself
-  # already a 2x bump from the original 250m/256Mi -- this is a 4x total now).
+  # Pulled back down from 1/1Gi request, 2/2Gi limit -- real usage measured
+  # idle at 25m/12Mi (no live WebRTC/recording session running), the earlier
+  # bumps were oversized relative to that. Limit kept at 2x request, same
+  # ratio this chart has used since its first commit.
   requests:
-    cpu: "1"
+    cpu: 500m
     memory: 1Gi
   limits:
-    cpu: "2"
+    cpu: "1"
     memory: 2Gi
 ingress:
   enabled: true
