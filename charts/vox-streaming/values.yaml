@@ -14,14 +14,14 @@ autoscaling:
   targetCPUUtilizationPercentage: 70
   targetMemoryUtilizationPercentage: 75
 resources:
-  # Doubled from the original 250m/256Mi request, 500m/512Mi limit -- this had
-  # never been raised since the chart's first commit, unlike vox/agents.
+  # Doubled again from the prior 500m/512Mi request, 1/1Gi limit (itself
+  # already a 2x bump from the original 250m/256Mi -- this is a 4x total now).
   requests:
-    cpu: 500m
-    memory: 512Mi
-  limits:
     cpu: "1"
     memory: 1Gi
+  limits:
+    cpu: "2"
+    memory: 2Gi
 ingress:
   enabled: true
   # Currently no caller is wired to this service; deploy the ingress so the route is ready.

@@ -25,12 +25,13 @@ autoscaling:
 # under real exam load will need real headroom on both, unlike vox (a
 # lightweight Java API server where only RAM needed real growth).
 resources:
+  # 1.5x from the prior 1.5/2Gi request, 3/4Gi limit.
   requests:
-    cpu: "1.5"
-    memory: 2Gi
+    cpu: "2.25"
+    memory: 3Gi
   limits:
-    cpu: "3"
-    memory: 4Gi
+    cpu: "4.5"
+    memory: 6Gi
 # Hạn tắt êm khi pod bị thu hồi (rollout, scale-down, node drain của Karpenter).
 #
 # 45s = 10s cho realtime/background.py::drain (chờ tác vụ nền chạy nốt) + phần đóng WebSocket

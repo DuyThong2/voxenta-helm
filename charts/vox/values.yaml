@@ -12,17 +12,15 @@ autoscaling:
   targetCPUUtilizationPercentage: 85
   targetMemoryUtilizationPercentage: 85
 resources:
-  # Raised 3.5x across the board from the prior 600m/2Gi request, 1/4Gi limit
-  # (which was already RAM-generous per the old note below) -- headroom for the
-  # newly-wired practice-generation HTTP calls to agents + the gRPC call to
-  # vox-streaming (both were previously silently no-op/broken, now actually
-  # firing every request).
+  # Brought back down from the earlier 3.5x bump (2100m/7Gi request, 3.5/14Gi
+  # limit) to 1.5/6Gi request -- limit kept at the same ratio the 3.5x bump
+  # used (cpu ~1.67x request, mem 2x request), not a fresh guess.
   requests:
-    cpu: 2100m
-    memory: 7Gi
+    cpu: "1.5"
+    memory: 6Gi
   limits:
-    cpu: "3.5"
-    memory: 14Gi
+    cpu: "2.5"
+    memory: 12Gi
 ingress:
   enabled: true
   host: api.voxenta.net
