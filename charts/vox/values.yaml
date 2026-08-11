@@ -103,6 +103,13 @@ config:
   # 2026-08-11: OTP verify returned 503 for every WPF client because its
   # HealthCheckGrpcService call got "Connection refused: /0.0.0.0:9096".
   VOX_STREAMING_GRPC_TARGET: vox-streaming.vox-streaming.svc.cluster.local:9091
+  # application.yaml:309 (app.recording.bucket) -- bucket chứa recording.mp4 do vox-streaming
+  # ghép xong. RecordRecordingPartChangedUseCase lưu giá trị này vào exam_recordings.bucket;
+  # rỗng thì GetExamRecordingPlaybackUseCase.playbackUrlFor() trả null vì không presign được,
+  # và trang xem kết quả hiện "Chưa có tệp để phát" DÙ file có thật trên S3.
+  # Xác nhận thật 2026-08-11: 4 bản ghi READY, s3_key đầy đủ, recording.mp4 tồn tại trong
+  # S3 -- chỉ mỗi cột bucket rỗng. PHẢI khớp STORAGE_RECORDING_BUCKET của charts/vox-streaming.
+  RECORDING_S3_BUCKET: vox-exam-log
 externalSecret:
   refreshInterval: 1h
   secretStoreRef: aws-secrets-manager
