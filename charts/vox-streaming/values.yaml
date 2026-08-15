@@ -64,9 +64,23 @@ config:
   STORAGE_PRESIGN_MINUTES: "15"
   FRAME_CONVERT_CONCURRENCY: "2"
   FRAME_INTERVAL_SECS: "5"
-  # Wildcard -- matches vox/agents (all JWT-bearer auth, not cookie-based, so
-  # wildcard CORS doesn't expose credentials the way it would with cookies).
-  ALLOWED_ORIGINS: "*"
+  # Danh sách tường minh, KHÔNG còn "*" được nữa: vox-streaming 023be2f ("remove all
+  # origins allowed") đã bỏ nhánh đặc biệt cho "*" trong handler.go's CheckOrigin, nên
+  # từ bản đó trở đi "*" là một chuỗi thường -- không Origin thật nào khớp nó, và MỌI
+  # client có gửi Origin đều bị 403 ở handshake WebSocket.
+  #
+  # Ba giá trị này phải khớp TUYỆT ĐỐI (so sánh chuỗi, không chuẩn hoá): sai scheme,
+  # thiếu/thừa port, hay thừa dấu "/" cuối đều trượt.
+  #   - voxenta.net + www: trình duyệt mở trang giám sát, gọi /ws/monitor
+  #     (streamClient.ts) và các route HTTP /schedules/active, /live/... qua rs/cors --
+  #     cùng dùng chung danh sách này.
+  #   - stream.voxenta.net: app WPF gọi /ws/stream. ClientWebSocket không tự gửi Origin
+  #     nên MonitorStreamClient gắn tay từ MONITOR_STREAM_ORIGIN trong
+  #     DesktopApp/VoxOralExam/.env -- hai giá trị đó là MỘT cặp, đổi một bên mà quên bên
+  #     kia là mất luồng giám sát trực tiếp trong khi bài thi vẫn chạy bình thường, lỗi
+  #     rất dễ lọt. Ở đây nó trùng chính hostname của service chỉ vì tiện đặt tên; với
+  #     client không phải trình duyệt, Origin chỉ là nhãn nhận dạng, không phải địa chỉ.
+  ALLOWED_ORIGINS: "https://voxenta.net,https://www.voxenta.net,https://stream.voxenta.net"
   # EXAM_SERVICE_GRPC_ADDR / EXAM_SERVICE_CA_FILE / GRPC_CERT_FILE / GRPC_KEY_FILE /
   # GRPC_CA_FILE / SEGMENT_TEMP_DIR / SLACK_WEBHOOK_URL: deliberately left unset,
   # matching vox-streaming/.env exactly -- vox's own gRPC ExamService isn't built
