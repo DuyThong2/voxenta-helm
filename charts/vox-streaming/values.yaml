@@ -1,7 +1,7 @@
 replicaCount: 1
 image:
   repository: 975049890010.dkr.ecr.ap-southeast-1.amazonaws.com/vox-streaming
-  tag: "1e9c472"
+  tag: "7de5f21"
   pullPolicy: IfNotPresent
 service:
   httpPort: 8080
