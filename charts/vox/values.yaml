@@ -61,7 +61,7 @@ config:
   # (checks School existence first) -- safe to leave "true" across restarts.
   DEMO_DATA_ENABLED: "true"
   DEMO_DATA_PASSWORD: "Password@123"
-  KAFKA_BOOTSTRAP_SERVERS: vox-kafka.vox.svc.cluster.local:9092
+  KAFKA_BOOTSTRAP_SERVERS: kafka.vox.svc.cluster.local:9092
   REDIS_HOST: vox-redis-master.vox.svc.cluster.local
   REDIS_PORT: "6379"
   # application.yaml:111 builds jdbc:postgresql://${DB_URL}/${DB_NAME} — DB_URL
@@ -165,40 +165,3 @@ redis:
       size: 5Gi
     extraFlags:
       - --appendonly yes
-kafka:
-  # bitnami/kafka has zero public tags left on Docker Hub (Broadcom moved
-  # versioned images behind the paid "Bitnami Secure Images" tier) -- confirmed
-  # for real during deploy: ImagePullBackOff, "not found". bitnamilegacy/kafka
-  # has the exact same image/tag (just relocated org, not a different build)
-  # -- verified this tag exists there before switching. postgresql/redis
-  # subcharts still pull fine from bitnami/ as of this deploy; only override
-  # the one that's actually broken, don't preemptively touch those.
-  image:
-    registry: docker.io
-    repository: bitnamilegacy/kafka
-  kraft:
-    enabled: true
-  # Kafka defaults offsets.topic.replication.factor=3 (needs 3 brokers to
-  # replicate the internal __consumer_offsets topic to) -- with only 1
-  # controller/broker (controller.replicaCount: 1, broker.replicaCount: 0),
-  # that requirement can never be satisfied, so the topic silently never gets
-  # created and EVERY consumer group permanently fails with "Group Coordinator
-  # Not Available" -- confirmed for real: `kafka-topics.sh --describe
-  # --topic __consumer_offsets` returned "Topic does not exist". Not a
-  # transient startup delay, doesn't self-resolve. Same reasoning applies to
-  # transaction.state.log.replication.factor (not currently used by any
-  # producer here, but fixing both together avoids hitting this again later).
-  overrideConfiguration:
-    offsets.topic.replication.factor: 1
-    transaction.state.log.replication.factor: 1
-  controller:
-    replicaCount: 1
-    persistence:
-      enabled: true
-      storageClass: gp3
-      size: 30Gi
-  broker:
-    replicaCount: 0
-  listeners:
-    client:
-      protocol: PLAINTEXT

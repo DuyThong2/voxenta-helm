@@ -1,0 +1,92 @@
+# Cấu hình cho ExternalSecret của chart này (templates/externalsecret.yaml).
+externalSecret:
+  refreshInterval: 1h
+  secretStoreRef: aws-secrets-manager
+
+kafka:
+  # bitnami/kafka has zero public tags left on Docker Hub (Broadcom moved
+  # versioned images behind the paid "Bitnami Secure Images" tier) -- confirmed
+  # for real during deploy: ImagePullBackOff, "not found". bitnamilegacy/kafka
+  # has the exact same image/tag (just relocated org, not a different build)
+  # -- verified this tag exists there before switching.
+  image:
+    registry: docker.io
+    repository: bitnamilegacy/kafka
+
+  # ========================================================================
+  # NGUỒN GỐC CỦA VIỆC KAFKA RESTART MỖI LẦN DEPLOY -- và cách chặn.
+  #
+  # Chart Bitnami sinh 4 giá trị NGẪU NHIÊN ở mỗi lần render:
+  #   secret vox-kafka-kraft          -> cluster-id, controller-0-id
+  #   secret vox-kafka-user-passwords -> controller-password, inter-broker-password
+  #
+  # Helper `common.secrets.passwords.manage` dựa vào `lookup` để giữ giá trị cũ,
+  # nhưng ArgoCD render bằng `helm template` -- KHÔNG có quyền đọc cụm -- nên
+  # `lookup` luôn trả rỗng và helper rơi về `randAlphaNum`. Giá trị đổi thì
+  # annotation `checksum/secret` trên StatefulSet đổi theo, StatefulSet coi là
+  # spec mới và CUỐN LẠI POD. Đo thật 2026-08-18: 50 controllerrevision, riêng
+  # 11 lần trong 20 giờ, mỗi lần Kafka đứt ~70 giây.
+  #
+  # Đã thử và LOẠI hai cách:
+  #   - Ghim `clusterId` + 2 mật khẩu trong values: KHÔNG đủ. `controller-N-id`
+  #     khai báo `providedValues: (list "")` trong secrets.yaml, tức không có
+  #     khoá values nào ghim được nó. Render 2 lần vẫn ra 2 checksum khác nhau.
+  #   - Chỉ đặt existingKraftSecret: cũng không đủ, secret mật khẩu vẫn random.
+  #
+  # Cách chạy được là đặt CẢ HAI existing*Secret bên dưới. Lúc đó chart bỏ hẳn
+  # khối sinh secret, annotation `checksum/secret` BIẾN MẤT, và render 3 lần cho
+  # ra StatefulSet giống hệt nhau (đã kiểm chứng bằng helm template).
+  #
+  # Hai secret này do chart NÀY cung cấp, mỗi cái theo một cách khác nhau vì bản
+  # chất khác nhau:
+  #
+  #   kafka-kraft  -> templates/kraft-secret.yaml. cluster-id và controller-N-id
+  #                   là ĐỊNH DANH, không phải bí mật, và chỉ dùng lúc format ổ
+  #                   trống. Suy ra bằng hàm băm của (tên release + chỉ số) nên
+  #                   KHÔNG phải nạp sẵn ở đâu, và replicaCount bao nhiêu cũng tự
+  #                   sinh đủ id -- nâng replica không cần sửa gì ngoài dòng
+  #                   replicaCount bên dưới.
+  #
+  #   kafka-sasl   -> templates/externalsecret.yaml, đọc từ AWS Secrets Manager.
+  #                   Đây là credential THẬT (interbroker/controller dùng
+  #                   SASL_PLAINTEXT), nên phải nằm ở secret store.
+  #
+  # Ghim mật khẩu còn CẦN HƠN khi nhiều broker, không chỉ để hết restart: mật
+  # khẩu interbroker ngẫu nhiên mỗi lần render nghĩa là trong lúc rolling restart,
+  # broker mới và broker cũ mang hai mật khẩu khác nhau -> xác thực interbroker
+  # thất bại. Một broker thì không thấy; nhiều broker là lỗi nặng.
+  # ========================================================================
+  existingKraftSecret: kafka-kraft
+  sasl:
+    existingSecret: kafka-sasl
+
+  kraft:
+    enabled: true
+  # Kafka defaults offsets.topic.replication.factor=3 (needs 3 brokers to
+  # replicate the internal __consumer_offsets topic to) -- with only 1
+  # controller/broker (controller.replicaCount: 1, broker.replicaCount: 0),
+  # that requirement can never be satisfied, so the topic silently never gets
+  # created and EVERY consumer group permanently fails with "Group Coordinator
+  # Not Available" -- confirmed for real: `kafka-topics.sh --describe
+  # --topic __consumer_offsets` returned "Topic does not exist". Not a
+  # transient startup delay, doesn't self-resolve. Same reasoning applies to
+  # transaction.state.log.replication.factor (not currently used by any
+  # producer here, but fixing both together avoids hitting this again later).
+  overrideConfiguration:
+    offsets.topic.replication.factor: 1
+    transaction.state.log.replication.factor: 1
+  controller:
+    replicaCount: 1
+    persistence:
+      enabled: true
+      storageClass: gp3
+      size: 30Gi
+  broker:
+    replicaCount: 0
+  # CHỈ listener client là PLAINTEXT. interbroker/controller giữ mặc định của
+  # chart là SASL_PLAINTEXT -- đó là lý do 2 mật khẩu SASL ở trên là THẬT, không
+  # phải đồ trang trí: `kafka.saslEnabled` xét cả hai listener đó, không chỉ
+  # client. Đừng tưởng client PLAINTEXT là SASL không được dùng.
+  listeners:
+    client:
+      protocol: PLAINTEXT

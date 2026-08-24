@@ -5,13 +5,18 @@ type: application
 version: 0.1.0
 appVersion: "1.0.0"
 dependencies:
+  # GHIM CHÍNH XÁC, không dùng ">=" (đổi 2026-08-19). Ràng buộc trôi nổi biến
+  # một lệnh `helm dependency update` -- chạy vì muốn nâng subchart NÀY -- thành
+  # một lần nâng luôn subchart KHÁC ngoài ý muốn, kéo theo đổi StatefulSet spec
+  # và cuốn lại database. Nâng phiên bản từ nay phải là một thay đổi có chủ ý,
+  # sửa đúng con số ở đây.
   - name: postgresql
-    version: ">=16.0.0"
+    version: "18.8.0"
     repository: https://charts.bitnami.com/bitnami
   - name: redis
-    version: ">=20.0.0"
+    version: "27.0.15"
     repository: https://charts.bitnami.com/bitnami
-  - name: kafka
-    version: ">=31.0.0"
-    repository: https://charts.bitnami.com/bitnami
+  # kafka ĐÃ TÁCH sang charts/kafka (2026-08-19) -- release + ArgoCD Application
+  # riêng. Xem charts/kafka/Chart.yaml để biết lý do, và argocd/apps/kafka-app.yaml
+  # cho annotation manifest-generate-paths (thiếu nó thì tách xong vẫn restart).
 

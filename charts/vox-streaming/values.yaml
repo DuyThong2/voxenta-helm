@@ -35,7 +35,7 @@ ingress:
   # ALB from provisioning (confirmed for real).
   idleTimeoutSeconds: 3600
 config:
-  KAFKA_BROKERS: vox-kafka.vox.svc.cluster.local:9092
+  KAFKA_BROKERS: kafka.vox.svc.cluster.local:9092
   KAFKA_CONSUMER_GROUP: vox-streaming
   REDIS_ADDR: vox-redis-master.vox.svc.cluster.local:6379
   WEBRTC_ADDR: ":8080"

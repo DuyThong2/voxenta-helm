@@ -1,0 +1,28 @@
+apiVersion: v2
+name: kafka
+description: >
+  Kafka cho Vox, tách khỏi charts/vox thành release riêng (2026-08-19).
+
+  Vì sao tách: Kafka từng là subchart của charts/vox, nên nó nằm CÙNG một Helm
+  release và cùng một ArgoCD Application với ứng dụng Java. Hệ quả đo được ngày
+  2026-08-18: StatefulSet Kafka bị cuốn lại 11 lần trong 20 giờ, mỗi lần đứt
+  ~70 giây, chỉ vì mỗi lần bump ảnh vox là render lại cả release.
+
+  Tách một mình KHÔNG đủ để chặn việc đó -- ArgoCD render lại theo revision của
+  repo, không theo path -- nên Application của chart này BẮT BUỘC phải có
+  annotation `argocd.argoproj.io/manifest-generate-paths: /charts/kafka`
+  (xem argocd/apps/kafka-app.yaml). Thiếu annotation đó thì tách xong Kafka vẫn
+  restart y như cũ.
+
+  Cái thật sự chặn nguồn bất định là existingKraftSecret + sasl.existingSecret
+  trong values.yaml -- xem khối chú thích ở đó.
+type: application
+version: 0.1.0
+appVersion: "4.0.0"
+dependencies:
+  # GHIM CHÍNH XÁC, không dùng ">=": ràng buộc trôi nổi biến một lệnh
+  # `helm dependency update` (chạy vì muốn nâng thứ khác) thành một lần nâng
+  # Kafka ngoài ý muốn, kéo theo đổi StatefulSet spec và cuốn broker.
+  - name: kafka
+    version: "32.4.3"
+    repository: https://charts.bitnami.com/bitnami

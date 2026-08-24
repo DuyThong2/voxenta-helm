@@ -85,7 +85,7 @@ config:
   # (dev-only) — agents doesn't have its own Kafka subchart, it consumes vox's.
   # KAFKA_CLIENT_ID/KAFKA_CONSUMER_GROUP/topic names keep their code defaults,
   # already matching what vox publishes on the other side.
-  KAFKA_BOOTSTRAP_SERVERS: vox-kafka.vox.svc.cluster.local:9092
+  KAFKA_BOOTSTRAP_SERVERS: kafka.vox.svc.cluster.local:9092
   # practice_session_client.py:15 -- defaults to localhost:8080 (unreachable
   # from this pod). Used together with PRACTICE_INTERNAL_SECRET (externalsecret.yaml)
   # to call vox's /internal/practice-sessions/** endpoints.

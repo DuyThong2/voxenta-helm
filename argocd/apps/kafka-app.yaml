@@ -1,0 +1,45 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kafka
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    # ĐỪNG XOÁ DÒNG NÀY -- không có nó thì việc tách Kafka ra chart riêng mất
+    # phần lớn ý nghĩa.
+    #
+    # ArgoCD render lại manifest khi REVISION CỦA REPO đổi, không phải khi file
+    # trong `path` của app đổi. Cả 5 Application ở đây đều trỏ cùng repo và cùng
+    # `targetRevision: main`, nên mỗi commit vào voxenta-helm -- kể cả commit chỉ
+    # bump tag ảnh của vox hay agents -- làm MỌI app render lại.
+    #
+    # Với chart Bitnami Kafka, render lại từng đồng nghĩa với sinh lại giá trị
+    # ngẫu nhiên và cuốn StatefulSet (đo thật 2026-08-18: 11 lần trong 20 giờ).
+    # existingKraftSecret/sasl.existingSecret trong charts/kafka/values.yaml đã
+    # chặn nguồn bất định đó, còn annotation này chặn luôn việc render lại vô cớ
+    # -- hai lớp độc lập, giữ cả hai.
+    #
+    # Đường dẫn tính từ gốc repo, phải bắt đầu bằng "/".
+    argocd.argoproj.io/manifest-generate-paths: /charts/kafka
+spec:
+  project: vox
+  source:
+    repoURL: https://github.com/DuyThong2/voxenta-helm.git
+    targetRevision: main
+    path: charts/kafka
+    helm:
+      valueFiles:
+        - values.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    # CÙNG namespace `vox` với ứng dụng, không tách namespace: tên service Kafka
+    # đi vào KAFKA_BOOTSTRAP_SERVERS của 3 chart dưới dạng FQDN
+    # (kafka.vox.svc.cluster.local:9092), nên đổi namespace là phải sửa cả ba.
+    namespace: vox
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
