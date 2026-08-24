@@ -11,6 +11,20 @@ metadata:
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80},{"HTTPS":443}]'
     alb.ingress.kubernetes.io/ssl-redirect: "443"
     alb.ingress.kubernetes.io/backend-protocol: HTTP
+    # FastAPI không gắn route nào ở "/" nên health check mặc định của ALB (GET "/"
+    # trên cổng traffic) trả 404 -> target group đứng `unhealthy` vĩnh viễn. Đo thật
+    # 2026-08-24: k8s-voxagent-agents-f71b0a1e71 ở trạng thái unhealthy trong khi pod
+    # hoàn toàn bình thường.
+    #
+    # Chuyện này ÂM THẦM chứ không gãy hẳn, nên rất dễ bỏ qua: ALB fail-open -- khi
+    # MỌI target trong nhóm đều unhealthy thì nó vẫn chuyển tiếp request. Tức
+    # agents.voxenta.net vẫn trả 200 dù health check chưa từng đậu. Cái mất là khả
+    # năng phát hiện: pod chết thật cũng không phân biệt được với trạng thái này, và
+    # rolling update không có tín hiệu nào để chờ.
+    #
+    # /health (src/controller/home.py) là liveness thuần, không đụng Azure/Postgres/
+    # Kafka, chạy trên chính cổng 8000 nên không cần khai healthcheck-port.
+    alb.ingress.kubernetes.io/healthcheck-path: /health
     alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds={{ .Values.ingress.idleTimeoutSeconds }}
     alb.ingress.kubernetes.io/target-group-attributes: stickiness.enabled=true,stickiness.lb_cookie.duration_seconds={{ .Values.ingress.stickinessSeconds }}
 {{- if .Values.ingress.certificateArn }}

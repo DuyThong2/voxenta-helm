@@ -11,6 +11,25 @@ metadata:
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80},{"HTTPS":443}]'
     alb.ingress.kubernetes.io/ssl-redirect: "443"
     alb.ingress.kubernetes.io/backend-protocol: HTTP
+    # Cùng lỗi với charts/agents: health check mặc định GET "/" không khớp route nào
+    # nên target group đứng `unhealthy` mãi (đo thật 2026-08-24:
+    # k8s-voxstrea-voxstrea-da4f2d5601). ALB fail-open che mất triệu chứng -- lưu lượng
+    # vẫn chạy, chỉ là không còn cách nào biết pod sống hay chết.
+    #
+    # KHÁC agents ở một điểm quan trọng: /healthz KHÔNG nằm trên cổng traffic. Nó được
+    # đăng ký trong internal/transport/http/metric.go, tức chạy trên METRIC_ADDR
+    # (":9090" -- xem values.yaml) chứ không phải cổng HTTP 8080. Thiếu dòng
+    # healthcheck-port bên dưới thì ALB gọi /healthz trên 8080 và vẫn trượt y như cũ.
+    # Cổng 9090 đã khai sẵn là containerPort `metrics` nên ALB (target-type: ip) gọi
+    # thẳng vào pod được; AWS LB Controller tự mở luật security group cho cổng này.
+    #
+    # Chọn /healthz chứ không /readyz: /healthz là liveness thuần, không chạm upstream
+    # (đúng cái Dockerfile của vox-streaming tự dùng cho HEALTHCHECK của nó). /readyz
+    # có kiểm tra phụ thuộc, đúng nghĩa hơn về mặt "sẵn sàng nhận traffic", nhưng một
+    # cú nấc của S3/Postgres sẽ kéo cả service ra khỏi ALB -- cái giá đó không đáng ở
+    # quy mô hiện tại.
+    alb.ingress.kubernetes.io/healthcheck-path: /healthz
+    alb.ingress.kubernetes.io/healthcheck-port: "9090"
     alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds={{ .Values.ingress.idleTimeoutSeconds }}
 {{- if .Values.ingress.certificateArn }}
     alb.ingress.kubernetes.io/certificate-arn: {{ .Values.ingress.certificateArn | quote }}
