@@ -1,4 +1,8 @@
-replicaCount: 2
+# 2 -> 1 (2026-08-19). Chỉ là điểm XUẤT PHÁT: autoscaling bên dưới đã bật với
+# minReplicas 1 / maxReplicas 3, nên HPA vẫn tự nâng lên 2-3 khi tải thật tăng.
+# Khởi động ở 2 replica cho một hệ 2-3 người thi đồng thời là giữ chỗ thừa suốt
+# ngày để phòng một tình huống mà HPA vốn đã lo được.
+replicaCount: 1
 image:
   repository: 975049890010.dkr.ecr.ap-southeast-1.amazonaws.com/vox-app
   tag: "8620be5"
@@ -12,14 +16,31 @@ autoscaling:
   targetCPUUtilizationPercentage: 85
   targetMemoryUtilizationPercentage: 85
 resources:
-  # Brought back down close to the proven pre-session baseline (600m/2Gi
-  # request measured real usage ~813-870Mi/157-230m CPU) -- memory raised a
-  # bit further to 3.5Gi for headroom on the newly-wired practice-generation
-  # HTTP calls + gRPC call to vox-streaming. Limit kept at cpu ~1.67x request,
-  # mem 2x request (same ratio used throughout this chart's history).
+  # Hạ request 2026-08-19: 600m/3.5Gi -> 400m/3Gi. LIMITS GIỮ NGUYÊN.
+  #
+  # Chính chú thích cũ ở đây ghi mức đo thật: ~813-870Mi RAM và 157-230m CPU.
+  # Tức 3.5Gi request phục vụ một pod dùng ~870Mi -- giữ chỗ gấp 4 lần, suốt
+  # ngày, cho một biên mà `limits` (7Gi) đã lo rồi.
+  #
+  # Vì sao đây là chỗ đáng sửa nhất: `requests` là phần scheduler ĐẶT CHỖ CỐ ĐỊNH,
+  # nó quyết định cần bao nhiêu node. 3.5Gi x 2 replica = 7Gi bị giữ, và vì một
+  # t3a.xlarge chỉ còn ~14.5Gi dùng được sau overhead nên hai pod vox gần như
+  # không thể ở chung node với Kafka + 2 Postgres + Redis + ArgoCD. Đó là lý do
+  # cụm luôn cần 2 node Karpenter (~$280/tháng).
+  #
+  # Hạ request KHÔNG làm pod chạy chậm hơn: `limits` mới là trần lúc bung, và
+  # chúng giữ nguyên. Đổi lại HPA còn nhạy hơn vì targetCPUUtilization 85% tính
+  # theo request -- 340m thay vì 510m là đã bung.
+  #
+  # Vẫn còn biên thật: 3Gi là ~3.5x mức đo, 400m là ~1.7x mức đo cao nhất.
+  # Phần cắt chính đến từ replicaCount 2 -> 1 (bỏ hẳn một suất 3Gi), nên không
+  # cần siết memory sâu hơn -- giữ 3Gi cho các lời gọi practice-generation và
+  # gRPC sang vox-streaming như chú thích cũ đã tính tới.
+  # Nếu thấy OOMKill hoặc HPA bung liên tục thì nâng lại -- git revert là xong,
+  # không có state nào bị đổi.
   requests:
-    cpu: 600m
-    memory: 3.5Gi
+    cpu: 400m
+    memory: 3Gi
   limits:
     cpu: "1"
     memory: 7Gi

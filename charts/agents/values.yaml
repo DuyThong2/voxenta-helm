@@ -30,6 +30,11 @@ resources:
   # ~400Mi RAM) as headroom for YOLO CPU inference spikes under real exam
   # load, not yet observed live. The 2.25/3Gi bump earlier today went beyond
   # even that intentional headroom for no measured reason.
+  #
+  # ĐÃ CÂN NHẮC HẠ XUỐNG 700m VÀ QUYẾT ĐỊNH KHÔNG (2026-08-19): mức đo ~15m CPU
+  # là đo lúc KHÔNG có phiên thi nào chạy, tức chưa từng đo YOLO lúc thật sự suy
+  # luận. Hạ request dựa trên một phép đo không bao gồm đúng tải mình lo ngại là
+  # tự lừa mình. Giữ 1.5 CPU cho tới khi có số đo dưới tải thi thật.
   requests:
     cpu: "1.5"
     memory: 2Gi
