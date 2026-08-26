@@ -63,6 +63,20 @@ ingress:
 config:
   ENVIRONMENT: production
   LOG_LEVEL: INFO
+  # TẠM THỜI, BẬT ĐỂ CHẨN ĐOÁN (2026-08-26) -- xoá dòng này khi xong.
+  #
+  # Bật chế độ gỡ lỗi của asyncio với ngưỡng 1.5 giây (xem app.py's lifespan). Mỗi callback chạy
+  # lâu hơn thế sẽ bị in ra kèm TÊN HÀM.
+  #
+  # Lý do: đo thật cùng ngày, vòng lặp sự kiện đứng 9 giây giữa một phiên thi -- Kafka loại toàn
+  # bộ consumer vì quá hạn heartbeat, WebSocket chết mã 1006, thí sinh thấy mất kết nối. Log
+  # thường chỉ cho thấy một khoảng trống, không có tên hàm nào để lần theo.
+  #
+  # 1.5 giây chứ không phải mặc định 0.1 của PYTHONASYNCIODEBUG: YOLO chạy liên tục sẽ vượt 0.1
+  # suốt, log ngập và chôn mất tín hiệu thật.
+  #
+  # ⚠️ Chế độ này có phí tổn hiệu năng. Đừng để chạy dài hạn trên môi trường thi thật.
+  ASYNCIO_SLOW_CALLBACK_SECONDS: "1.5"
   CHROMA_HOST: agents-chromadb.vox-agents.svc.cluster.local
   CHROMA_PORT: "8000"
   VOX_STREAMING_GRPC_ADDR: vox-streaming.vox-streaming.svc.cluster.local:9091
