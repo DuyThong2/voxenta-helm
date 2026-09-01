@@ -97,7 +97,7 @@ config:
   # Frontend routes the app links to after email flows — real domain, not a
   # secret. Update if the frontend's actual route paths differ.
   PASSWORD_SETUP_URL: https://voxenta.net/setup-password
-  OAUTH2_URL: https://voxenta.net/oauth2/success
+  OAUTH2_URL: https://voxenta.net/oauth2-callback
   # Exam-upload S3 storage (application.yaml:123-133) — all optional/empty by
   # Spring default, but STORAGE_PROVIDER=s3 is what the real dev .env uses, so
   # treat as required for the upload feature to actually work in production.
@@ -145,6 +145,8 @@ config:
   # None sẽ nới rộng hơn mức cần thiết.
   COOKIE_SECURE: "true"
   COOKIE_SAME_SITE: Lax
+  COOKIE_DOMAIN: "voxenta.net"
+  NOTIFICATION_URL: https://voxenta.net/n
 externalSecret:
   refreshInterval: 1h
   secretStoreRef: aws-secrets-manager
